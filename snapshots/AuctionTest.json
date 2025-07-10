@@ -1,6 +1,7 @@
 {
-  "submitBid_exactIn_floorPrice": "336835",
-  "submitBid_exactIn_initializesTickAndUpdatesClearingPrice": "414133",
-  "submitBid_exactOut_floorPrice": "336809",
-  "submitBid_exactOut_initializesTickAndUpdatesClearingPrice": "414107"
+  "submitBid": "101746",
+  "submitBid_exactIn_recordStep_initializeTick_updateClearingPrice": "413292",
+  "submitBid_initializeTick": "221709",
+  "submitBid_recordStep": "335512",
+  "submitBid_recordStep_initializeTick": "413292"
 }

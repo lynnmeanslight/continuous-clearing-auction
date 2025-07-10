@@ -96,20 +96,23 @@ contract Auction is IAuction {
         if (block.number < startBlock) revert AuctionNotStarted();
         if (block.number < step.endBlock) revert AuctionStepNotOver();
 
+        AuctionStep memory currentStep = step;
+
         // Write current data to step
-        step.clearingPrice = clearingPrice;
-        if (clearingPrice > floorPrice) {
-            step.amountCleared = step.resolvedSupply(totalSupply, totalCleared, sumBps);
-        } else {
-            // not fully cleared
-            step.amountCleared = _aggregateDemandTickUpper();
+        currentStep.clearingPrice = clearingPrice;
+        if(currentStep.bps > 0) {
+            if (clearingPrice > floorPrice) {
+                currentStep.amountCleared = currentStep.resolvedSupply(totalSupply, totalCleared, sumBps);
+            } else {
+                // not fully cleared
+                currentStep.amountCleared = _aggregateDemandTickUpper();
+            }
+            // Update global state
+            totalCleared += currentStep.amountCleared;
+            sumBps += currentStep.bps;
         }
 
-        // Update totalCleared
-        totalCleared += step.amountCleared;
-        sumBps += step.bps;
-
-        uint256 _id = step.id;
+        uint256 _id = currentStep.id;
         offset = _id * 8; // offset is the pointer to the next step in the auctionStepsData. Each step is a uint64 (8 bytes)
         uint256 _offset = offset;
 
@@ -120,13 +123,17 @@ contract Auction is IAuction {
         _id++;
         uint256 _startBlock = block.number;
         uint256 _endBlock = _startBlock + blockDelta;
-        step.id = _id;
-        step.bps = bps;
-        step.startBlock = _startBlock;
-        step.endBlock = _endBlock;
-        step.next = steps[headId].next;
+        
+        currentStep.id = _id;
+        currentStep.bps = bps;
+        currentStep.startBlock = _startBlock;
+        currentStep.endBlock = _endBlock;
+        currentStep.next = steps[headId].next;
         steps[headId].next = _id;
         headId = _id;
+
+        // Write back the modified step
+        step = currentStep;
 
         emit AuctionStepRecorded(_id, _startBlock, _endBlock);
     }
@@ -135,26 +142,31 @@ contract Auction is IAuction {
     /// @dev if the tick already exists, return the existing tick id
     function _initializeTickIfNeeded(uint128 prev, uint256 price) internal returns (uint128 id) {
         uint128 next;
-        id = nextTickId == 0 ? 1 : nextTickId;
-
-        // Inserting at the beginning of the list
+        uint256 nextPrice;
+        
         if (prev == 0) {
             next = headTickId;
-            if (next != 0 && ticks[next].price < price) {
-                revert TickPriceNotIncreasing();
+            if (next != 0) {
+                nextPrice = ticks[next].price;
+                if (nextPrice < price) revert TickPriceNotIncreasing();
             }
         } else {
             next = ticks[prev].next;
-            if (ticks[prev].price >= price || (next != 0 && ticks[next].price < price)) {
+            uint256 prevPrice = ticks[prev].price;
+            
+            if (next != 0) {
+                nextPrice = ticks[next].price;
+            }
+            
+            if (prevPrice >= price || (next != 0 && nextPrice < price)) {
                 revert TickPriceNotIncreasing();
             }
         }
-
-        // Hot path if the tick already exists
-        if (next != 0 && ticks[next].price == price) {
-            return next;
-        }
         
+        // The tick already exists, return it
+        if (nextPrice == price) return next;
+        
+        id = nextTickId == 0 ? 1 : nextTickId;
         Tick storage newTick = ticks[id];
         newTick.id = id;
         newTick.prev = prev;
@@ -163,11 +175,10 @@ contract Auction is IAuction {
         newTick.sumCurrencyDemand = 0;
         newTick.sumTokenDemand = 0;
         
-        // Update pointers
         if (prev == 0) {
-            // Base case for the first tick, set the tickUpperId
-            tickUpperId = id;
+            // Base case: first tick becomes both head and tickUpper
             headTickId = id;
+            tickUpperId = id;
         } else {
             ticks[prev].next = id;
         }
@@ -222,8 +233,9 @@ contract Auction is IAuction {
         }
 
         if (_clearingPrice < floorPrice) _clearingPrice = floorPrice;
-        if (_clearingPrice > clearingPrice) {
-            emit ClearingPriceUpdated(clearingPrice, _clearingPrice);
+        uint256 _oldClearingPrice = clearingPrice;
+        if (_clearingPrice > _oldClearingPrice) {
+            emit ClearingPriceUpdated(_oldClearingPrice, _clearingPrice);
             clearingPrice = _clearingPrice;
         }
     }
@@ -244,11 +256,11 @@ contract Auction is IAuction {
             validationHook.validate(block.number);
         }
 
+        if (block.number >= step.endBlock) _recordStep();
+
         uint128 id = _initializeTickIfNeeded(prevHintId, bid.maxPrice);
         _updateTick(id, bid);
         
-        if (block.number >= step.endBlock) _recordStep();
-
         // Only bids higher than the clearing price can change the clearing price
         if (bid.maxPrice >= ticks[tickUpperId].price) {
             if (bid.exactIn) {

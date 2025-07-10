@@ -57,14 +57,16 @@ contract AuctionTest is TokenHandler, Test {
         vm.expectEmit(true, true, true, true);
         emit IAuction.BidSubmitted(1, _tickPriceAt(1), true, 100e18);
         auction.submitBid(_tickPriceAt(1), true, 100e18, alice, 0);
-        vm.snapshotGasLastCall('submitBid_exactIn_floorPrice');
+        vm.snapshotGasLastCall('submitBid_recordStep');
+
+        auction.submitBid(_tickPriceAt(1), true, 100e18, alice, 0);
+        vm.snapshotGasLastCall('submitBid');
     }
 
     function test_submitBid_exactOut_atFloorPrice_succeeds() public {
         vm.expectEmit(true, true, true, true);
         emit IAuction.BidSubmitted(1, _tickPriceAt(1), false, 10e18);
         auction.submitBid(_tickPriceAt(1), false, 10e18, alice, 0);
-        vm.snapshotGasLastCall('submitBid_exactOut_floorPrice');
     }
 
     function test_submitBid_exactIn_initializesTickAndUpdatesClearingPrice_succeeds() public {
@@ -73,7 +75,7 @@ contract AuctionTest is TokenHandler, Test {
         vm.expectEmit(true, true, true, true);
         emit IAuction.BidSubmitted(2, _tickPriceAt(2), true, 100e18);
         auction.submitBid(_tickPriceAt(2), true, 100e18, alice, 1);
-        vm.snapshotGasLastCall('submitBid_exactIn_initializesTickAndUpdatesClearingPrice');
+        vm.snapshotGasLastCall('submitBid_exactIn_recordStep_initializeTick_updateClearingPrice');
     }
 
     function test_submitBid_exactOut_initializesTickAndUpdatesClearingPrice_succeeds() public {
@@ -82,7 +84,6 @@ contract AuctionTest is TokenHandler, Test {
         vm.expectEmit(true, true, true, true);
         emit IAuction.BidSubmitted(2, _tickPriceAt(2), false, 10e18);
         auction.submitBid(_tickPriceAt(2), false, 10e18, alice, 1);
-        vm.snapshotGasLastCall('submitBid_exactOut_initializesTickAndUpdatesClearingPrice');
     }
 
     function test_submitBid_updatesClearingPrice_succeeds() public {
@@ -90,5 +91,17 @@ contract AuctionTest is TokenHandler, Test {
         emit IAuction.ClearingPriceUpdated(0, _tickPriceAt(2));
         // Bid enough to update the clearing price
         auction.submitBid(_tickPriceAt(2), true, 500e18, alice, 1);
+    }
+
+    function test_submitBid_multipleTicks_succeeds() public {
+        vm.expectEmit(true, true, true, true);
+        emit IAuction.TickInitialized(2, _tickPriceAt(2));
+        auction.submitBid(_tickPriceAt(2), true, 500e18, alice, 1);
+        vm.snapshotGasLastCall('submitBid_recordStep_initializeTick');
+        
+        vm.expectEmit(true, true, true, true);
+        emit IAuction.TickInitialized(3, _tickPriceAt(3));
+        auction.submitBid(_tickPriceAt(3), true, 500e18, alice, 2);
+        vm.snapshotGasLastCall('submitBid_initializeTick');
     }
 }

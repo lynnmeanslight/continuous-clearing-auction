@@ -101,7 +101,7 @@ interface IAuction is
     function submitBid(
         uint256 maxPrice,
         bool exactIn,
-        uint256 amount,
+        uint128 amount,
         address owner,
         uint256 prevTickPrice,
         bytes calldata hookData
@@ -122,15 +122,9 @@ interface IAuction is
     /// @notice Exit a bid which has been partially filled
     /// @dev This function can be used for fully filled or partially filled bids. For fully filled bids, `exitBid` is more efficient
     /// @param bidId The id of the bid
-    /// @param lastFullyFilledCheckpointBlock The last checkpointed block where the clearing price is strictly < bid.maxPrice
-    /// @param firstOutbidCheckpointBlock The first checkpointed block where the clearing price is strictly > bid.maxPrice
-    ///              this value is not required if the bid is partially filled at the end of the auction (final clearing price == bid.maxPrice)
-    ///              if the bid is fully filled at the end of the auction, it should be set to 0
-    function exitPartiallyFilledBid(
-        uint256 bidId,
-        uint64 lastFullyFilledCheckpointBlock,
-        uint64 firstOutbidCheckpointBlock
-    ) external;
+    /// @param lower The last checkpointed block where the clearing price is strictly < bid.maxPrice
+    /// @param upper The first checkpointed block where the clearing price is strictly > bid.maxPrice, or 0 if the bid is partially filled at the end of the auction
+    function exitPartiallyFilledBid(uint256 bidId, uint64 lower, uint64 upper) external;
 
     /// @notice Claim tokens after the auction's claim block
     /// @notice The bid must be exited before claiming tokens

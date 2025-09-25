@@ -35,6 +35,28 @@ contract AuctionTest is AuctionBaseTest {
         return uint128(tokens.fullMulDivUp(maxPrice, FixedPoint96.Q96));
     }
 
+    function test_submitBid_beforeTokensReceived_reverts() public {
+        Auction newAuction = new Auction(address(token), TOTAL_SUPPLY, params);
+        token.mint(address(newAuction), TOTAL_SUPPLY);
+        vm.expectRevert(IAuction.TokensNotReceived.selector);
+        // Submit random bid, will revert
+        newAuction.submitBid{value: inputAmountForTokens(100e18, tickNumberToPriceX96(2))}(
+            tickNumberToPriceX96(2),
+            true,
+            inputAmountForTokens(100e18, tickNumberToPriceX96(2)),
+            alice,
+            tickNumberToPriceX96(1),
+            bytes('')
+        );
+    }
+
+    function test_checkpoint_beforeTokensReceived_reverts() public {
+        Auction newAuction = new Auction(address(token), TOTAL_SUPPLY, params);
+        token.mint(address(newAuction), TOTAL_SUPPLY);
+        vm.expectRevert(IAuction.TokensNotReceived.selector);
+        newAuction.checkpoint();
+    }
+
     /// forge-config: default.isolate = true
     /// forge-config: ci.isolate = true
     function test_submitBid_exactIn_succeeds_gas() public {
@@ -240,6 +262,7 @@ contract AuctionTest is AuctionBaseTest {
             .withEndBlock(block.number + 200).withClaimBlock(block.number + 200);
         auction = new Auction(address(token), TOTAL_SUPPLY, params);
         token.mint(address(auction), TOTAL_SUPPLY);
+        auction.onTokensReceived();
 
         // Bid over the total supply
         uint128 inputAmount = inputAmountForTokens(2000e18, tickNumberToPriceX96(2));
@@ -285,6 +308,7 @@ contract AuctionTest is AuctionBaseTest {
             .withEndBlock(block.number + 200).withClaimBlock(block.number + 200);
         auction = new Auction(address(token), TOTAL_SUPPLY, params);
         token.mint(address(auction), TOTAL_SUPPLY);
+        auction.onTokensReceived();
 
         uint128 inputAmount = inputAmountForTokens(1000e18, tickNumberToPriceX96(1));
         vm.expectEmit(true, true, true, true);
@@ -827,8 +851,164 @@ contract AuctionTest is AuctionBaseTest {
         auction.sweepUnsoldTokens();
     }
 
-    function test_onTokensReceived_withCorrectTokenAndAmount_succeeds() public view {
-        // Should not revert since tokens are already minted in setUp()
+    function test_exitPartiallyFilledBid_roundingError_succeeds() public {
+        address bob = makeAddr('bob');
+        address charlie = makeAddr('charlie');
+
+        vm.roll(block.number + 1);
+        uint256 bidId1 = auction.submitBid{value: inputAmountForTokens(400e18, tickNumberToPriceX96(5))}(
+            tickNumberToPriceX96(5),
+            true,
+            inputAmountForTokens(400e18, tickNumberToPriceX96(5)),
+            alice,
+            tickNumberToPriceX96(1),
+            bytes('')
+        );
+
+        vm.roll(block.number + 1);
+        uint256 bidId2 = auction.submitBid{value: inputAmountForTokens(600e18, tickNumberToPriceX96(5))}(
+            tickNumberToPriceX96(5),
+            true,
+            inputAmountForTokens(600e18, tickNumberToPriceX96(5)),
+            bob,
+            tickNumberToPriceX96(1),
+            bytes('')
+        );
+
+        vm.roll(block.number + 1);
+        // Not enough to move the price to 3, but to cause partial fills at 2
+        uint256 bidId3 = auction.submitBid{value: inputAmountForTokens(500e18, tickNumberToPriceX96(6))}(
+            tickNumberToPriceX96(6),
+            true,
+            inputAmountForTokens(500e18, tickNumberToPriceX96(6)),
+            charlie,
+            tickNumberToPriceX96(5),
+            bytes('')
+        );
+
+        vm.roll(block.number + 1);
+        uint256 bidId4 = auction.submitBid{value: inputAmountForTokens(1, tickNumberToPriceX96(6))}(
+            tickNumberToPriceX96(6), false, 1, charlie, tickNumberToPriceX96(5), bytes('')
+        );
+
+        vm.roll(block.number + 1);
+        auction.checkpoint();
+        assertEq(auction.clearingPrice(), tickNumberToPriceX96(5));
+
+        // Roll to end of auction
+        vm.roll(auction.endBlock());
+
+        vm.startPrank(auction.fundsRecipient());
+        auction.sweepCurrency();
+        vm.stopPrank();
+
+        vm.roll(auction.claimBlock());
+
+        vm.startPrank(charlie);
+        auction.exitBid(bidId3);
+        auction.claimTokens(bidId3);
+        auction.exitBid(bidId4);
+        auction.claimTokens(bidId4);
+        vm.stopPrank();
+
+        vm.startPrank(alice);
+        auction.exitPartiallyFilledBid(bidId1, 3, 0);
+        auction.claimTokens(bidId1);
+        vm.stopPrank();
+
+        vm.startPrank(bob);
+        auction.exitPartiallyFilledBid(bidId2, 3, 0);
+        auction.claimTokens(bidId2);
+        vm.stopPrank();
+
+        // All tokens were sold
+        vm.expectEmit(true, true, true, true);
+        emit ITokenCurrencyStorage.TokensSwept(auction.tokensRecipient(), 0);
+        auction.sweepUnsoldTokens();
+    }
+
+    function test_fuzzReplay_roundingErrors_succeeds() public {
+        vm.roll(2);
+        vm.roll(3);
+        vm.roll(4);
+        auction.submitBid{value: 16_951_001}(
+            79_228_162_514_264_337_593_543_950_341_500,
+            false,
+            16_951,
+            alice,
+            79_228_162_514_264_337_593_543_950_336_000,
+            bytes('')
+        );
+
+        vm.roll(5);
+        auction.checkpoint();
+
+        vm.roll(6);
+        auction.submitBid{value: 1_938_195_602_430_274_713_814_001}(
+            79_228_162_514_264_337_593_543_950_357_400,
+            false,
+            1_938_195_602_430_274_713_814,
+            alice,
+            79_228_162_514_264_337_593_543_950_341_500,
+            bytes('')
+        );
+
+        vm.roll(101);
+        auction.checkpoint();
+
+        auction.exitPartiallyFilledBid(0, 6, 101);
+        auction.exitPartiallyFilledBid(1, 6, 101);
+
+        vm.roll(auction.claimBlock());
+        auction.claimTokens(0);
+        auction.claimTokens(1);
+    }
+
+    function test_fuzzReplay_supplyCausingRoundingErrors_succeeds() public {
+        vm.roll(2);
+        auction.submitBid{value: 305_286_001}(
+            79_228_162_514_264_337_593_543_950_349_400,
+            false,
+            305_286,
+            alice,
+            79_228_162_514_264_337_593_543_950_336_000,
+            bytes('')
+        );
+
+        auction.submitBid{value: 233_715_034_573_585_010_487_001}(
+            79_228_162_514_264_337_593_543_950_341_500,
+            false,
+            233_715_034_573_585_010_487,
+            alice,
+            79_228_162_514_264_337_593_543_950_336_000,
+            bytes('')
+        );
+
+        auction.submitBid{value: 894_591_511_812_533_175_189_001}(
+            79_228_162_514_264_337_593_543_950_350_900,
+            false,
+            894_591_511_812_533_175_189,
+            alice,
+            79_228_162_514_264_337_593_543_950_349_400,
+            bytes('')
+        );
+
+        vm.roll(101);
+        auction.checkpoint();
+
+        auction.exitBid(0);
+        auction.exitPartiallyFilledBid(1, 2, 0);
+        auction.exitBid(2);
+
+        vm.roll(auction.claimBlock());
+        auction.claimTokens(0);
+        auction.claimTokens(1);
+        auction.claimTokens(2);
+    }
+
+    function test_onTokensReceived_withCorrectTokenAndAmount_succeeds() public {
+        vm.expectEmit(true, true, true, true);
+        emit IAuction.TokensReceived(TOTAL_SUPPLY);
         auction.onTokensReceived();
     }
 
@@ -851,6 +1031,7 @@ contract AuctionTest is AuctionBaseTest {
 
         Auction newAuction = new Auction(address(token), TOTAL_SUPPLY, params);
         token.mint(address(newAuction), TOTAL_SUPPLY);
+        newAuction.onTokensReceived();
 
         // Advance to middle of step without any bids (clearing price = 0)
         vm.roll(block.number + 50);
@@ -915,6 +1096,7 @@ contract AuctionTest is AuctionBaseTest {
 
         Auction newAuction = new Auction(address(token), TOTAL_SUPPLY, params);
         token.mint(address(newAuction), TOTAL_SUPPLY);
+        newAuction.onTokensReceived();
 
         newAuction.submitBid{value: inputAmountForTokens(100e18, tickNumberToPriceX96(2))}(
             tickNumberToPriceX96(2),
@@ -946,6 +1128,7 @@ contract AuctionTest is AuctionBaseTest {
 
         MockAuction mockAuction = new MockAuction(address(token), TOTAL_SUPPLY, params);
         token.mint(address(mockAuction), TOTAL_SUPPLY);
+        mockAuction.onTokensReceived();
 
         // Set up the auction state by submitting a bid and checkpointing
         uint256 bidPrice = 12e6 << FixedPoint96.RESOLUTION;
@@ -985,7 +1168,7 @@ contract AuctionTest is AuctionBaseTest {
 
         Auction testAuction = new Auction(address(token), TOTAL_SUPPLY, params);
         token.mint(address(testAuction), TOTAL_SUPPLY);
-
+        testAuction.onTokensReceived();
         // Submit a bid with hook data to trigger the validation hook
         uint256 bidId = testAuction.submitBid{value: inputAmountForTokens(100e18, tickNumberToPriceX96(2))}(
             tickNumberToPriceX96(2),
@@ -1005,7 +1188,7 @@ contract AuctionTest is AuctionBaseTest {
         params = params.withCurrency(address(currency));
         Auction erc20Auction = new Auction(address(token), TOTAL_SUPPLY, params);
         token.mint(address(erc20Auction), TOTAL_SUPPLY);
-
+        erc20Auction.onTokensReceived();
         // Mint currency tokens to alice
         currency.mint(alice, 1000e18);
 
@@ -1226,17 +1409,9 @@ contract AuctionTest is AuctionBaseTest {
 
     function test_claimTokens_tokenTransferFails_reverts() public {
         MockToken failingToken = new MockToken();
-
-        bytes memory auctionStepsData = AuctionStepsBuilder.init().addStep(100e3, 100);
-        AuctionParameters memory params = AuctionParamsBuilder.init().withCurrency(ETH_SENTINEL).withFloorPrice(
-            FLOOR_PRICE
-        ).withTickSpacing(TICK_SPACING).withValidationHook(address(0)).withTokensRecipient(tokensRecipient)
-            .withFundsRecipient(fundsRecipient).withStartBlock(block.number).withEndBlock(block.number + AUCTION_DURATION)
-            .withClaimBlock(block.number + AUCTION_DURATION + 10).withAuctionStepsData(auctionStepsData);
-
         Auction failingAuction = new Auction(address(failingToken), TOTAL_SUPPLY, params);
-
         failingToken.mint(address(failingAuction), TOTAL_SUPPLY);
+        failingAuction.onTokensReceived();
 
         uint256 bidId = failingAuction.submitBid{value: inputAmountForTokens(100e18, tickNumberToPriceX96(2))}(
             tickNumberToPriceX96(2),
@@ -1303,6 +1478,7 @@ contract AuctionTest is AuctionBaseTest {
 
         Auction auctionWithThreshold = new Auction(address(token), TOTAL_SUPPLY, params);
         token.mint(address(auctionWithThreshold), TOTAL_SUPPLY);
+        auctionWithThreshold.onTokensReceived();
 
         // Submit a small bid (only 10% of supply, below 50% threshold)
         uint128 smallAmount = TOTAL_SUPPLY / 10;
@@ -1328,7 +1504,7 @@ contract AuctionTest is AuctionBaseTest {
 
         Auction auctionWithThreshold = new Auction(address(token), TOTAL_SUPPLY, params);
         token.mint(address(auctionWithThreshold), TOTAL_SUPPLY);
-
+        auctionWithThreshold.onTokensReceived();
         // Submit a bid for 50% of supply (above 30% threshold)
         uint128 halfSupply = TOTAL_SUPPLY / 2;
         uint128 inputAmount = inputAmountForTokens(halfSupply, tickNumberToPriceX96(2));
@@ -1595,7 +1771,7 @@ contract AuctionTest is AuctionBaseTest {
 
         Auction auctionWithThreshold = new Auction(address(token), TOTAL_SUPPLY, params);
         token.mint(address(auctionWithThreshold), TOTAL_SUPPLY);
-
+        auctionWithThreshold.onTokensReceived();
         // Submit a bid for 60% of supply (above 30% threshold, so graduated)
         uint128 soldAmount = (TOTAL_SUPPLY * 60) / 100;
         uint128 inputAmount = inputAmountForTokens(soldAmount, tickNumberToPriceX96(1));
@@ -1621,7 +1797,7 @@ contract AuctionTest is AuctionBaseTest {
         params = params.withGraduationThresholdMps(1e7 / 2);
         Auction auctionWithThreshold = new Auction(address(token), TOTAL_SUPPLY, params);
         token.mint(address(auctionWithThreshold), TOTAL_SUPPLY);
-
+        auctionWithThreshold.onTokensReceived();
         // Submit a small bid for 10% of supply (below 50% threshold, so not graduated)
         uint128 smallAmount = TOTAL_SUPPLY / 10;
         uint128 inputAmount = inputAmountForTokens(smallAmount, tickNumberToPriceX96(1));
@@ -1648,7 +1824,7 @@ contract AuctionTest is AuctionBaseTest {
 
         Auction auctionWithThreshold = new Auction(address(token), TOTAL_SUPPLY, params);
         token.mint(address(auctionWithThreshold), TOTAL_SUPPLY);
-
+        auctionWithThreshold.onTokensReceived();
         // Submit a bid for 70% of supply (above threshold)
         uint128 soldAmount = (TOTAL_SUPPLY * 70) / 100;
         uint128 inputAmount = inputAmountForTokens(soldAmount, tickNumberToPriceX96(1));
@@ -1682,7 +1858,7 @@ contract AuctionTest is AuctionBaseTest {
 
         Auction auctionWithThreshold = new Auction(address(token), TOTAL_SUPPLY, params);
         token.mint(address(auctionWithThreshold), TOTAL_SUPPLY);
-
+        auctionWithThreshold.onTokensReceived();
         // Submit a bid for only 20% of supply (below 80% threshold)
         uint128 smallAmount = TOTAL_SUPPLY / 5;
         uint128 inputAmount = inputAmountForTokens(smallAmount, tickNumberToPriceX96(1));

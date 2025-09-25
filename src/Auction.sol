@@ -52,6 +52,8 @@ contract Auction is
 
     /// @notice The sum of demand in ticks above the clearing price
     Demand public sumDemandAboveClearing;
+    /// @notice Whether the TOTAL_SUPPLY of tokens has been received
+    bool private _tokensReceived;
 
     constructor(address _token, uint128 _totalSupply, AuctionParameters memory _parameters)
         AuctionStepStorage(_parameters.auctionStepsData, _parameters.startBlock, _parameters.endBlock)
@@ -88,9 +90,21 @@ contract Auction is
         _;
     }
 
+    /// @notice Modifier for functions which can only be called after the auction is started and the tokens have been received
+    modifier onlyActiveAuction() {
+        if (block.number < startBlock) revert AuctionNotStarted();
+        if (!_tokensReceived) revert TokensNotReceived();
+        _;
+    }
+
     /// @inheritdoc IDistributionContract
-    function onTokensReceived() external view {
-        if (token.balanceOf(address(this)) < totalSupply) revert IDistributionContract__InvalidAmountReceived();
+    function onTokensReceived() external {
+        // Use the normal totalSupply value instead of the scaled up X7 value
+        if (token.balanceOf(address(this)) < totalSupply) {
+            revert IDistributionContract__InvalidAmountReceived();
+        }
+        _tokensReceived = true;
+        emit TokensReceived(totalSupply);
     }
 
     /// @notice External function to check if the auction has graduated as of the latest checkpoint
@@ -245,7 +259,6 @@ contract Auction is
     /// @param blockNumber The block number to checkpoint at
     function _unsafeCheckpoint(uint64 blockNumber) internal returns (Checkpoint memory _checkpoint) {
         if (blockNumber == lastCheckpointedBlock) return latestCheckpoint();
-        if (blockNumber < startBlock) revert AuctionNotStarted();
 
         // Update the latest checkpoint, accounting for new bids and advances in supply schedule
         _checkpoint = _updateLatestCheckpointToCurrentStep(blockNumber);
@@ -326,7 +339,7 @@ contract Auction is
     }
 
     /// @inheritdoc IAuction
-    function checkpoint() public returns (Checkpoint memory _checkpoint) {
+    function checkpoint() public onlyActiveAuction returns (Checkpoint memory _checkpoint) {
         if (block.number > endBlock) revert AuctionIsOver();
         return _unsafeCheckpoint(uint64(block.number));
     }
@@ -340,7 +353,7 @@ contract Auction is
         address owner,
         uint256 prevTickPrice,
         bytes calldata hookData
-    ) external payable returns (uint256) {
+    ) external payable onlyActiveAuction returns (uint256) {
         // Bids cannot be submitted at the endBlock or after
         if (block.number >= endBlock) revert AuctionIsOver();
         uint128 requiredCurrencyAmount = BidLib.inputAmount(exactIn, amount, maxPrice);

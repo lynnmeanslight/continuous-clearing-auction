@@ -230,6 +230,8 @@ contract AuctionTest is AuctionBaseTest {
         assertEq(address(alice).balance, aliceBalanceBefore + inputAmount / 2);
 
         vm.roll(auction.claimBlock());
+        vm.expectEmit(true, true, true, true);
+        emit IAuction.TokensClaimed(bidId, alice, 1000e18);
         auction.claimTokens(bidId);
         assertEq(token.balanceOf(address(alice)), aliceTokenBalanceBefore + 1000e18);
     }
@@ -252,6 +254,8 @@ contract AuctionTest is AuctionBaseTest {
         );
 
         vm.roll(auction.claimBlock());
+        vm.expectEmit(true, true, true, true);
+        emit IAuction.TokensClaimed(bidId, alice, 1000e18);
         auction.claimTokens(bidId);
         assertEq(token.balanceOf(address(alice)), aliceTokenBalanceBefore + 1000e18);
     }
@@ -300,6 +304,8 @@ contract AuctionTest is AuctionBaseTest {
         assertEq(address(alice).balance, aliceBalanceBefore + inputAmount / 2);
 
         vm.roll(auction.claimBlock());
+        vm.expectEmit(true, true, true, true);
+        emit IAuction.TokensClaimed(bidId, alice, 1000e18);
         auction.claimTokens(bidId);
         assertEq(token.balanceOf(address(alice)), aliceTokenBalanceBefore + 1000e18);
     }
@@ -346,6 +352,8 @@ contract AuctionTest is AuctionBaseTest {
         assertEq(address(alice).balance, aliceBalanceBefore + 0);
 
         vm.roll(auction.claimBlock());
+        vm.expectEmit(true, true, true, true);
+        emit IAuction.TokensClaimed(bidId, alice, 1000e18);
         auction.claimTokens(bidId);
         assertEq(token.balanceOf(address(alice)), aliceTokenBalanceBefore + 1000e18);
     }
@@ -374,10 +382,16 @@ contract AuctionTest is AuctionBaseTest {
 
         uint256 aliceTokenBalanceBefore = token.balanceOf(address(alice));
         vm.roll(auction.claimBlock());
+        vm.expectEmit(true, true, true, true);
+        emit IAuction.TokensClaimed(bidId, alice, 500e18);
+        vm.expectEmit(true, true, true, true);
+        emit IAuction.TokensClaimed(bidId2, alice, 500e18);
         auction.claimTokens(bidId);
         // Assert that bid1 purchased more than 50% of the tokens (since it participated for one more block than bid2)
         assertGt(token.balanceOf(address(alice)), aliceTokenBalanceBefore + 500e18);
         aliceTokenBalanceBefore = token.balanceOf(address(alice));
+        vm.expectEmit(true, true, true, true);
+        emit IAuction.TokensClaimed(bidId2, alice, 500e18);
         auction.claimTokens(bidId2);
         // Assert that bid2 purchased less than 50% of the tokens
         assertLt(token.balanceOf(address(alice)), aliceTokenBalanceBefore + 500e18);
@@ -403,6 +417,25 @@ contract AuctionTest is AuctionBaseTest {
             // Final checkpoint should remain the same as the last block
             assertEq(auction.lastCheckpointedBlock(), auction.endBlock());
         }
+    }
+
+    function test_submitBid_beforeAuctionStartBlock_reverts(uint64 startBlock) public {
+        // Fuzz start block to account for the endBlock
+        vm.assume(startBlock > 0 && startBlock <= type(uint64).max - 2);
+        uint256 auctionDuration = 1;
+        params = params.withStartBlock(uint256(startBlock)).withEndBlock(uint256(startBlock) + auctionDuration)
+            .withClaimBlock(uint256(startBlock) + 2).withAuctionStepsData(
+            AuctionStepsBuilder.init().addStep(1e7, uint40(auctionDuration))
+        );
+        auction = new Auction(address(token), TOTAL_SUPPLY, params);
+        token.mint(address(auction), TOTAL_SUPPLY);
+        auction.onTokensReceived();
+
+        vm.roll(startBlock - 1);
+        vm.expectRevert(IAuction.AuctionNotStarted.selector);
+        auction.submitBid{value: inputAmountForTokens(10e18, tickNumberToPriceX96(1))}(
+            tickNumberToPriceX96(1), true, 10e18, alice, tickNumberToPriceX96(1), bytes('')
+        );
     }
 
     function test_submitBid_exactIn_atFloorPrice_reverts() public {

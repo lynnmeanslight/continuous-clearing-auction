@@ -96,6 +96,8 @@ contract TickStorageTest is Test, Assertions {
         assertEq(tickStorage.nextActiveTickPrice(), type(uint256).max);
 
         // Initializing a tick above the highest tick in the book should set nextActiveTickPrice to the new tick
+        vm.expectEmit(true, true, true, true);
+        emit ITickStorage.NextActiveTickUpdated(tickNumberToPriceX96(3));
         tickStorage.initializeTickIfNeeded(price, tickNumberToPriceX96(3));
         assertEq(tickStorage.nextActiveTickPrice(), tickNumberToPriceX96(3));
     }
@@ -106,6 +108,8 @@ contract TickStorageTest is Test, Assertions {
         vm.store(address(tickStorage), bytes32(uint256(1)), bytes32(maxTickPrice));
 
         // When we call initializeTickIfNeeded, the new tick should update nextActiveTickPrice
+        vm.expectEmit(true, true, true, true);
+        emit ITickStorage.NextActiveTickUpdated(200e6);
         tickStorage.initializeTickIfNeeded(FLOOR_PRICE, 200e6);
         assertEq(tickStorage.nextActiveTickPrice(), 200e6);
     }

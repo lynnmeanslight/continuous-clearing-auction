@@ -1,5 +1,5 @@
 # IAuction
-[Git Source](https://github.com/Uniswap/twap-auction/blob/0ee04bc2c45f6d51f37030260f300f404e183bf7/src/interfaces/IAuction.sol)
+[Git Source](https://github.com/Uniswap/twap-auction/blob/3101ca7f72a1286347869f4c1ea9af514bb5ff7f/src/interfaces/IAuction.sol)
 
 **Inherits:**
 [IDistributionContract](/src/interfaces/external/IDistributionContract.sol/interface.IDistributionContract.md), [ICheckpointStorage](/src/interfaces/ICheckpointStorage.sol/interface.ICheckpointStorage.md), [ITickStorage](/src/interfaces/ITickStorage.sol/interface.ITickStorage.md), [IAuctionStepStorage](/src/interfaces/IAuctionStepStorage.sol/interface.IAuctionStepStorage.md), [ITokenCurrencyStorage](/src/interfaces/ITokenCurrencyStorage.sol/interface.ITokenCurrencyStorage.md), [IBidStorage](/src/interfaces/IBidStorage.sol/interface.IBidStorage.md)
@@ -53,6 +53,12 @@ Register a new checkpoint
 ```solidity
 function checkpoint() external returns (Checkpoint memory _checkpoint);
 ```
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_checkpoint`|`Checkpoint`|The checkpoint at the current block|
+
 
 ### isGraduated
 
@@ -62,6 +68,12 @@ Whether the auction has graduated as of the latest checkpoint (sold more than th
 ```solidity
 function isGraduated() external view returns (bool);
 ```
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`bool`|True if the auction has graduated, false otherwise|
+
 
 ### exitBid
 
@@ -122,8 +134,7 @@ function claimTokens(uint256 bidId) external;
 
 Withdraw all of the currency raised
 
-*Can only be called by the funds recipient after the auction has ended
-Must be called before the `claimBlock`*
+*Can be called by anyone after the auction has ended*
 
 
 ```solidity
@@ -234,12 +245,12 @@ event TokensClaimed(uint256 indexed bidId, address indexed owner, uint128 tokens
 |`tokensFilled`|`uint128`|The amount of tokens claimed|
 
 ## Errors
-### IDistributionContract__InvalidAmountReceived
+### InvalidTokenAmountReceived
 Error thrown when the amount received is invalid
 
 
 ```solidity
-error IDistributionContract__InvalidAmountReceived();
+error InvalidTokenAmountReceived();
 ```
 
 ### InvalidAmount

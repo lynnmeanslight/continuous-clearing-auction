@@ -1,5 +1,5 @@
 # TickStorage
-[Git Source](https://github.com/Uniswap/twap-auction/blob/0ee04bc2c45f6d51f37030260f300f404e183bf7/src/TickStorage.sol)
+[Git Source](https://github.com/Uniswap/twap-auction/blob/87fb8f9575631e47cd6fe069c142cc67d2505068/src/TickStorage.sol)
 
 **Inherits:**
 [ITickStorage](/src/interfaces/ITickStorage.sol/interface.ITickStorage.md)
@@ -9,6 +9,8 @@ Abstract contract for handling tick storage
 
 ## State Variables
 ### $_ticks
+Mapping of price levels to tick data
+
 
 ```solidity
 mapping(uint256 price => Tick) private $_ticks;
@@ -77,6 +79,12 @@ function getTick(uint256 price) public view returns (Tick memory);
 |----|----|-----------|
 |`price`|`uint256`|The price of the tick|
 
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`Tick`|The tick at the given price|
+
 
 ### _initializeTickIfNeeded
 
@@ -126,6 +134,12 @@ The price of the next initialized tick above the clearing price
 ```solidity
 function nextActiveTickPrice() external view override(ITickStorage) returns (uint256);
 ```
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`uint256`|The price of the next active tick|
+
 
 ### ticks
 

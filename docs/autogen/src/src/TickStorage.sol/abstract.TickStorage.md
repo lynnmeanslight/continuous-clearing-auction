@@ -1,5 +1,5 @@
 # TickStorage
-[Git Source](https://github.com/Uniswap/twap-auction/blob/eddb06d9f9e6a95363d90d7326e355d98c8b0712/src/TickStorage.sol)
+[Git Source](https://github.com/Uniswap/twap-auction/blob/8cece7b4429d881c014ab2471e59a46f1e79e8cb/src/TickStorage.sol)
 
 **Inherits:**
 [ITickStorage](/src/interfaces/ITickStorage.sol/interface.ITickStorage.md)
@@ -90,8 +90,10 @@ function getTick(uint256 price) public view returns (Tick memory);
 
 Initialize a tick at `price` if it does not exist already
 
-*Requires `prevId` to be the id of the tick immediately preceding the desired price
-NextActiveTick will be updated if the new tick is right before it*
+*`prevPrice` MUST be the price of an initialized tick before the new price.
+Ideally, it is the price of the tick immediately preceding the desired price. If not,
+we will iterate through the ticks until we find the next price which requires more gas.
+If `price` is < `nextActiveTickPrice`, then `price` will be set as the nextActiveTickPrice*
 
 
 ```solidity

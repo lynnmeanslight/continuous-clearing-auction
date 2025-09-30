@@ -89,7 +89,7 @@ contract AuctionFactoryTest is TokenHandler, Test, Assertions {
         vm.expectRevert(IAuction.ClaimBlockIsBeforeEndBlock.selector);
         factory.initializeDistribution(address(token), TOTAL_SUPPLY, configData, bytes32(0));
     }
-    
+
     function test_initializeDistribution_createsAuction_withMsgSenderAsFundsRecipient() public {
         params = params.withFundsRecipient(address(1));
         bytes memory configData = abi.encode(params);

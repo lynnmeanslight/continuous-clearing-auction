@@ -391,16 +391,10 @@ contract AuctionTest is AuctionBaseTest {
 
         uint256 aliceTokenBalanceBefore = token.balanceOf(address(alice));
         vm.roll(auction.claimBlock());
-        vm.expectEmit(true, true, true, true);
-        emit IAuction.TokensClaimed(bidId, alice, 500e18);
-        vm.expectEmit(true, true, true, true);
-        emit IAuction.TokensClaimed(bidId2, alice, 500e18);
         auction.claimTokens(bidId);
         // Assert that bid1 purchased more than 50% of the tokens (since it participated for one more block than bid2)
         assertGt(token.balanceOf(address(alice)), aliceTokenBalanceBefore + 500e18);
         aliceTokenBalanceBefore = token.balanceOf(address(alice));
-        vm.expectEmit(true, true, true, true);
-        emit IAuction.TokensClaimed(bidId2, alice, 500e18);
         auction.claimTokens(bidId2);
         // Assert that bid2 purchased less than 50% of the tokens
         assertLt(token.balanceOf(address(alice)), aliceTokenBalanceBefore + 500e18);

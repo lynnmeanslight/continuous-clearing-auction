@@ -279,7 +279,7 @@ contract Auction is
     }
 
     /// @notice Iterate to find the tick where the total demand at and above it is strictly less than the remaining supply in the auction
-    /// @dev If the loop reaches the highest tick in the book, `nextActiveTickPrice` will be set to MAX_TICK_PRICE
+    /// @dev If the loop reaches the highest tick in the book, `nextActiveTickPrice` will be set to MAX_TICK_PTR
     /// @param _checkpoint The latest checkpoint
     /// @return The new clearing price
     function _iterateOverTicksAndFindClearingPrice(Checkpoint memory _checkpoint) internal returns (uint256) {
@@ -412,7 +412,7 @@ contract Auction is
 
         VALIDATION_HOOK.handleValidate(maxPrice, amount, owner, msg.sender, hookData);
         // ClearingPrice will be set to floor price in checkpoint() if not set already
-        if (maxPrice <= _checkpoint.clearingPrice) revert InvalidBidPrice();
+        if (maxPrice <= _checkpoint.clearingPrice || maxPrice >= BidLib.MAX_BID_PRICE) revert InvalidBidPrice();
 
         // Scale the amount according to the rest of the supply schedule, accounting for past blocks
         // This is only used in demand related internal calculations

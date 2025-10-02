@@ -1,5 +1,5 @@
 # Auction
-[Git Source](https://github.com/Uniswap/twap-auction/blob/17cd795efcd7da4447d3746773588de7c190a183/src/Auction.sol)
+[Git Source](https://github.com/Uniswap/twap-auction/blob/23d1996d53fc32e05713e0f370c3682331c7b03b/src/Auction.sol)
 
 **Inherits:**
 [BidStorage](/src/BidStorage.sol/abstract.BidStorage.md), [CheckpointStorage](/src/CheckpointStorage.sol/abstract.CheckpointStorage.md), [AuctionStepStorage](/src/AuctionStepStorage.sol/abstract.AuctionStepStorage.md), [TickStorage](/src/TickStorage.sol/abstract.TickStorage.md), [PermitSingleForwarder](/src/PermitSingleForwarder.sol/abstract.PermitSingleForwarder.md), [TokenCurrencyStorage](/src/TokenCurrencyStorage.sol/abstract.TokenCurrencyStorage.md), [IAuction](/src/interfaces/IAuction.sol/interface.IAuction.md)
@@ -196,7 +196,7 @@ function _calculateNewClearingPrice(
 
 Iterate to find the tick where the total demand at and above it is strictly less than the remaining supply in the auction
 
-*If the loop reaches the highest tick in the book, `nextActiveTickPrice` will be set to MAX_TICK_PRICE*
+*If the loop reaches the highest tick in the book, `nextActiveTickPrice` will be set to MAX_TICK_PTR*
 
 
 ```solidity

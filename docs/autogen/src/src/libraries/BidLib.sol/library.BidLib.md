@@ -1,5 +1,16 @@
 # BidLib
-[Git Source](https://github.com/Uniswap/twap-auction/blob/17cd795efcd7da4447d3746773588de7c190a183/src/libraries/BidLib.sol)
+[Git Source](https://github.com/Uniswap/twap-auction/blob/23d1996d53fc32e05713e0f370c3682331c7b03b/src/libraries/BidLib.sol)
+
+
+## State Variables
+### MAX_BID_PRICE
+The maximum allowable price for a bid, defined as the square of MAX_SQRT_PRICE from Uniswap v4's TickMath library.
+
+
+```solidity
+uint256 public constant MAX_BID_PRICE =
+    26_957_920_004_054_754_506_022_898_809_067_591_261_277_585_227_686_421_694_841_721_768_917;
+```
 
 
 ## Functions

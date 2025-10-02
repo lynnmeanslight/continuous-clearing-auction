@@ -1,5 +1,5 @@
 # TickStorage
-[Git Source](https://github.com/Uniswap/twap-auction/blob/17cd795efcd7da4447d3746773588de7c190a183/src/TickStorage.sol)
+[Git Source](https://github.com/Uniswap/twap-auction/blob/23d1996d53fc32e05713e0f370c3682331c7b03b/src/TickStorage.sol)
 
 **Inherits:**
 [ITickStorage](/src/interfaces/ITickStorage.sol/interface.ITickStorage.md)
@@ -46,12 +46,12 @@ uint256 internal immutable TICK_SPACING;
 ```
 
 
-### MAX_TICK_PRICE
-Sentinel value for the next value of the highest tick in the book
+### MAX_TICK_PTR
+Sentinel value for the next pointer of the highest tick in the book
 
 
 ```solidity
-uint256 public constant MAX_TICK_PRICE = type(uint256).max;
+uint256 public constant MAX_TICK_PTR = type(uint256).max;
 ```
 
 

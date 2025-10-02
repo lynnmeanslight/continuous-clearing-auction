@@ -1486,6 +1486,12 @@ contract AuctionTest is AuctionBaseTest {
         new Auction(address(token), TOTAL_SUPPLY, paramsZeroFloorPrice);
     }
 
+    function test_auctionConstruction_revertsWithFloorPriceAboveMaxBidPrice() public {
+        AuctionParameters memory paramsMaxFloorPrice = params.withFloorPrice(BidLib.MAX_BID_PRICE);
+        vm.expectRevert(ITickStorage.FloorPriceAboveMaxBidPrice.selector);
+        new Auction(address(token), TOTAL_SUPPLY, paramsMaxFloorPrice);
+    }
+
     function test_auctionConstruction_revertsWithClaimBlockBeforeEndBlock() public {
         AuctionParameters memory paramsClaimBlockBeforeEndBlock =
             params.withClaimBlock(block.number + AUCTION_DURATION - 1).withEndBlock(block.number + AUCTION_DURATION);

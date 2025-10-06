@@ -1,5 +1,5 @@
 # ValueX7X7
-[Git Source](https://github.com/Uniswap/twap-auction/blob/23d1996d53fc32e05713e0f370c3682331c7b03b/src/libraries/ValueX7X7Lib.sol)
+[Git Source](https://github.com/Uniswap/twap-auction/blob/572329a7aabc6c93930b434d7bbc37f669a19160/src/libraries/ValueX7X7Lib.sol)
 
 A ValueX7X7 is a ValueX7 value that has been multiplied by MPS
 

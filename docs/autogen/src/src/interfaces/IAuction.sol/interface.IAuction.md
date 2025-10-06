@@ -1,5 +1,5 @@
 # IAuction
-[Git Source](https://github.com/Uniswap/twap-auction/blob/0431e3687595718eb494f7f52a35a2eca979cbce/src/interfaces/IAuction.sol)
+[Git Source](https://github.com/Uniswap/twap-auction/blob/572329a7aabc6c93930b434d7bbc37f669a19160/src/interfaces/IAuction.sol)
 
 **Inherits:**
 [IDistributionContract](/src/interfaces/external/IDistributionContract.sol/interface.IDistributionContract.md), [ICheckpointStorage](/src/interfaces/ICheckpointStorage.sol/interface.ICheckpointStorage.md), [ITickStorage](/src/interfaces/ITickStorage.sol/interface.ITickStorage.md), [IAuctionStepStorage](/src/interfaces/IAuctionStepStorage.sol/interface.IAuctionStepStorage.md), [ITokenCurrencyStorage](/src/interfaces/ITokenCurrencyStorage.sol/interface.ITokenCurrencyStorage.md), [IBidStorage](/src/interfaces/IBidStorage.sol/interface.IBidStorage.md)
@@ -267,7 +267,7 @@ Emitted when a new checkpoint is created
 
 ```solidity
 event CheckpointUpdated(
-    uint256 indexed blockNumber, uint256 clearingPrice, ValueX7X7 totalClearedX7X7, uint24 cumulativeMps
+    uint256 indexed blockNumber, uint256 clearingPrice, ValueX7X7 totalCurrencyRaisedX7X7, uint24 cumulativeMps
 );
 ```
 
@@ -277,7 +277,7 @@ event CheckpointUpdated(
 |----|----|-----------|
 |`blockNumber`|`uint256`|The block number of the checkpoint|
 |`clearingPrice`|`uint256`|The clearing price of the checkpoint|
-|`totalClearedX7X7`|`ValueX7X7`|The total amount of tokens cleared|
+|`totalCurrencyRaisedX7X7`|`ValueX7X7`|The total currency raised|
 |`cumulativeMps`|`uint24`|The cumulative percentage of total tokens allocated across all previous steps, represented in ten-millionths of the total supply (1e7 = 100%)|
 
 ### ClearingPriceUpdated
@@ -343,6 +343,22 @@ Error thrown when not enough amount is deposited
 
 ```solidity
 error InvalidAmount();
+```
+
+### BidAmountTooSmall
+Error thrown when the bid amount is too small
+
+
+```solidity
+error BidAmountTooSmall();
+```
+
+### BidAmountTooLarge
+Error thrown when the bid amount is over ConstantsLib.X7X7_UPPER_BOUND
+
+
+```solidity
+error BidAmountTooLarge();
 ```
 
 ### CurrencyIsNotNative

@@ -1,5 +1,5 @@
 # TokenCurrencyStorage
-[Git Source](https://github.com/Uniswap/twap-auction/blob/8c2930146e31b54e368caa772ec5bb20d1a47d12/src/TokenCurrencyStorage.sol)
+[Git Source](https://github.com/Uniswap/twap-auction/blob/1a7f98b9e1cb9ed630b15a7f62d113994de8c338/src/TokenCurrencyStorage.sol)
 
 **Inherits:**
 [ITokenCurrencyStorage](/src/interfaces/ITokenCurrencyStorage.sol/interface.ITokenCurrencyStorage.md)
@@ -29,7 +29,7 @@ The total supply of tokens to sell
 
 
 ```solidity
-uint256 internal immutable TOTAL_SUPPLY;
+uint128 internal immutable TOTAL_SUPPLY;
 ```
 
 
@@ -83,7 +83,7 @@ uint256 public sweepUnsoldTokensBlock;
 
 
 ```solidity
-constructor(address _token, address _currency, uint256 _totalSupply, address _tokensRecipient, address _fundsRecipient);
+constructor(address _token, address _currency, uint128 _totalSupply, address _tokensRecipient, address _fundsRecipient);
 ```
 
 ### _sweepCurrency

@@ -304,7 +304,8 @@ contract Auction is
         }
 
         // The minimum clearing price is either the floor price or the last tick we iterated over.
-        // It becomes a lower bound for the clearing price.
+        // With the exception of the first iteration, the minimum price is a lower bound on the clearing price
+        // because we already verified that we had enough demand to purchase all of the remaining supply at that price.
         if (clearingPrice < minimumClearingPrice) {
             clearingPrice = minimumClearingPrice;
         }

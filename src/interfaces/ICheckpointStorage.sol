@@ -5,6 +5,9 @@ import {Checkpoint} from '../libraries/CheckpointLib.sol';
 
 /// @notice Interface for checkpoint storage operations
 interface ICheckpointStorage {
+    /// @notice Revert when attempting to insert a checkpoint at a block number not strictly greater than the last one
+    error CheckpointBlockNotIncreasing();
+
     /// @notice Get the latest checkpoint at the last checkpointed block
     /// @dev Be aware that the latest checkpoint may not be up to date, it is recommended
     ///      to always call `checkpoint()` before using getter functions

@@ -15,7 +15,6 @@ contract AuctionFactory is IAuctionFactory {
     /// @inheritdoc IDistributionStrategy
     function initializeDistribution(address token, uint256 amount, bytes calldata configData, bytes32 salt)
         external
-        override(IDistributionStrategy)
         returns (IDistributionContract distributionContract)
     {
         if (amount > type(uint128).max) revert InvalidTokenAmount(amount);
@@ -37,7 +36,6 @@ contract AuctionFactory is IAuctionFactory {
     function getAuctionAddress(address token, uint256 amount, bytes calldata configData, bytes32 salt, address sender)
         external
         view
-        override(IAuctionFactory)
         returns (address)
     {
         if (amount > type(uint128).max) revert InvalidTokenAmount(amount);

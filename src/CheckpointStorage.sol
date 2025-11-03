@@ -82,12 +82,12 @@ abstract contract CheckpointStorage is ICheckpointStorage {
     }
 
     /// @inheritdoc ICheckpointStorage
-    function lastCheckpointedBlock() external view override(ICheckpointStorage) returns (uint64) {
+    function lastCheckpointedBlock() external view returns (uint64) {
         return $lastCheckpointedBlock;
     }
 
     /// @inheritdoc ICheckpointStorage
-    function checkpoints(uint64 blockNumber) external view override(ICheckpointStorage) returns (Checkpoint memory) {
+    function checkpoints(uint64 blockNumber) external view returns (Checkpoint memory) {
         return $_checkpoints[blockNumber];
     }
 }

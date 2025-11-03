@@ -637,32 +637,32 @@ contract Auction is
 
     // Getters
     /// @inheritdoc IAuction
-    function claimBlock() external view override(IAuction) returns (uint64) {
+    function claimBlock() external view returns (uint64) {
         return CLAIM_BLOCK;
     }
 
     /// @inheritdoc IAuction
-    function validationHook() external view override(IAuction) returns (IValidationHook) {
+    function validationHook() external view returns (IValidationHook) {
         return VALIDATION_HOOK;
     }
 
     /// @inheritdoc IAuction
-    function currencyRaisedQ96_X7() external view override(IAuction) returns (ValueX7) {
+    function currencyRaisedQ96_X7() external view returns (ValueX7) {
         return $currencyRaisedQ96_X7;
     }
 
     /// @inheritdoc IAuction
-    function sumCurrencyDemandAboveClearingQ96() external view override(IAuction) returns (uint256) {
+    function sumCurrencyDemandAboveClearingQ96() external view returns (uint256) {
         return $sumCurrencyDemandAboveClearingQ96;
     }
 
     /// @inheritdoc IAuction
-    function totalClearedQ96_X7() external view override(IAuction) returns (ValueX7) {
+    function totalClearedQ96_X7() external view returns (ValueX7) {
         return $totalClearedQ96_X7;
     }
 
     /// @inheritdoc IAuction
-    function totalCleared() external view override(IAuction) returns (uint256) {
+    function totalCleared() external view returns (uint256) {
         return $totalClearedQ96_X7.divUint256(FixedPoint96.Q96).scaleDownToUint256();
     }
 }

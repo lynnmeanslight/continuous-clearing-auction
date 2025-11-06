@@ -1,8 +1,11 @@
 # AuctionFactory
-[Git Source](https://github.com/Uniswap/twap-auction/blob/468d53629b7c1620881cec3814c348b60ec958e9/src/AuctionFactory.sol)
+[Git Source](https://github.com/Uniswap/twap-auction/blob/b1e8018fe3abb164363f6a42aab29aa2b1ae6fa5/src/AuctionFactory.sol)
 
 **Inherits:**
 [IAuctionFactory](/Users/eric.zhong/uniswap/twap-auction/docs/autogen/src/src/interfaces/IAuctionFactory.sol/interface.IAuctionFactory.md)
+
+**Note:**
+security-contact: security@uniswap.org
 
 
 ## Functions

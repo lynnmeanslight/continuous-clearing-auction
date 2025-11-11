@@ -1,8 +1,54 @@
 # ITokenCurrencyStorage
-[Git Source](https://github.com/Uniswap/twap-auction/blob/a19cc56b47229fecd45274503206852cafed48a0/src/interfaces/ITokenCurrencyStorage.sol)
+[Git Source](https://github.com/Uniswap/twap-auction/blob/468d53629b7c1620881cec3814c348b60ec958e9/src/interfaces/ITokenCurrencyStorage.sol)
 
 Interface for token and currency storage operations
 
+
+## Functions
+### currency
+
+The currency being raised in the auction
+
+
+```solidity
+function currency() external view returns (Currency);
+```
+
+### token
+
+The token being sold in the auction
+
+
+```solidity
+function token() external view returns (IERC20Minimal);
+```
+
+### totalSupply
+
+The total supply of tokens to sell
+
+
+```solidity
+function totalSupply() external view returns (uint128);
+```
+
+### tokensRecipient
+
+The recipient of any unsold tokens at the end of the auction
+
+
+```solidity
+function tokensRecipient() external view returns (address);
+```
+
+### fundsRecipient
+
+The recipient of the raised Currency from the auction
+
+
+```solidity
+function fundsRecipient() external view returns (address);
+```
 
 ## Events
 ### TokensSwept
@@ -92,27 +138,11 @@ Error thrown when the tokens cannot be swept
 error CannotSweepTokens();
 ```
 
-### InvalidGraduationThresholdMps
-Error thrown when the graduation threshold is invalid
-
-
-```solidity
-error InvalidGraduationThresholdMps();
-```
-
 ### NotGraduated
 Error thrown when the auction has not graduated
 
 
 ```solidity
 error NotGraduated();
-```
-
-### FundsRecipientCallFailed
-Error thrown when the funds recipient data cannot be decoded
-
-
-```solidity
-error FundsRecipientCallFailed();
 ```
 

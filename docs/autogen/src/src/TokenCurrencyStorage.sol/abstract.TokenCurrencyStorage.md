@@ -1,73 +1,72 @@
 # TokenCurrencyStorage
-[Git Source](https://github.com/Uniswap/twap-auction/blob/a19cc56b47229fecd45274503206852cafed48a0/src/TokenCurrencyStorage.sol)
+[Git Source](https://github.com/Uniswap/twap-auction/blob/468d53629b7c1620881cec3814c348b60ec958e9/src/TokenCurrencyStorage.sol)
 
 **Inherits:**
-[ITokenCurrencyStorage](/src/interfaces/ITokenCurrencyStorage.sol/interface.ITokenCurrencyStorage.md)
+[ITokenCurrencyStorage](/Users/eric.zhong/uniswap/twap-auction/docs/autogen/src/src/interfaces/ITokenCurrencyStorage.sol/interface.ITokenCurrencyStorage.md)
 
 
 ## State Variables
-### currency
+### CURRENCY
 The currency being raised in the auction
 
 
 ```solidity
-Currency public immutable currency;
+Currency internal immutable CURRENCY
 ```
 
 
-### token
+### TOKEN
 The token being sold in the auction
 
 
 ```solidity
-IERC20Minimal public immutable token;
+IERC20Minimal internal immutable TOKEN
 ```
 
 
-### totalSupply
+### TOTAL_SUPPLY
 The total supply of tokens to sell
-
-*The auction does not support selling more than type(uint128).max tokens*
 
 
 ```solidity
-uint128 public immutable totalSupply;
+uint128 internal immutable TOTAL_SUPPLY
 ```
 
 
-### tokensRecipient
+### TOTAL_SUPPLY_Q96
+The total supply of tokens to sell in 160.96 form
+
+
+```solidity
+uint256 internal immutable TOTAL_SUPPLY_Q96
+```
+
+
+### TOKENS_RECIPIENT
 The recipient of any unsold tokens at the end of the auction
 
 
 ```solidity
-address public immutable tokensRecipient;
+address internal immutable TOKENS_RECIPIENT
 ```
 
 
-### fundsRecipient
+### FUNDS_RECIPIENT
 The recipient of the raised Currency from the auction
 
 
 ```solidity
-address public immutable fundsRecipient;
+address internal immutable FUNDS_RECIPIENT
 ```
 
 
-### graduationThresholdMps
-The minimum percentage of the total supply that must be sold
+### REQUIRED_CURRENCY_RAISED_Q96_X7
+The amount of currency required to be raised for the auction
+to graduate in Q96 form, scaled up by X7
 
 
 ```solidity
-uint24 public immutable graduationThresholdMps;
-```
-
-
-### requiredSupplySoldForGraduation
-The amount of supply that must be sold for the auction to graduate, saved for gas optimization
-
-
-```solidity
-uint128 public immutable requiredSupplySoldForGraduation;
+ValueX7 internal immutable REQUIRED_CURRENCY_RAISED_Q96_X7
 ```
 
 
@@ -76,7 +75,7 @@ The block at which the currency was swept
 
 
 ```solidity
-uint256 public sweepCurrencyBlock;
+uint256 public sweepCurrencyBlock
 ```
 
 
@@ -85,16 +84,7 @@ The block at which the tokens were swept
 
 
 ```solidity
-uint256 public sweepUnsoldTokensBlock;
-```
-
-
-### fundsRecipientData
-The data to pass to the fundsRecipient
-
-
-```solidity
-bytes public fundsRecipientData;
+uint256 public sweepUnsoldTokensBlock
 ```
 
 
@@ -109,9 +99,8 @@ constructor(
     uint128 _totalSupply,
     address _tokensRecipient,
     address _fundsRecipient,
-    uint24 _graduationThresholdMps,
-    bytes memory _fundsRecipientData
-);
+    uint128 _requiredCurrencyRaised
+) ;
 ```
 
 ### _sweepCurrency
@@ -126,5 +115,50 @@ function _sweepCurrency(uint256 amount) internal;
 
 ```solidity
 function _sweepUnsoldTokens(uint256 amount) internal;
+```
+
+### currency
+
+The currency being raised in the auction
+
+
+```solidity
+function currency() external view returns (Currency);
+```
+
+### token
+
+The token being sold in the auction
+
+
+```solidity
+function token() external view returns (IERC20Minimal);
+```
+
+### totalSupply
+
+The total supply of tokens to sell
+
+
+```solidity
+function totalSupply() external view returns (uint128);
+```
+
+### tokensRecipient
+
+The recipient of any unsold tokens at the end of the auction
+
+
+```solidity
+function tokensRecipient() external view returns (address);
+```
+
+### fundsRecipient
+
+The recipient of the raised Currency from the auction
+
+
+```solidity
+function fundsRecipient() external view returns (address);
 ```
 

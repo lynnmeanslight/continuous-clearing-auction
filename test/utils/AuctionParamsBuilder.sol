@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {AuctionParameters} from '../../src/interfaces/IAuction.sol';
+import {AuctionParameters} from '../../src/interfaces/IContinuousClearingAuction.sol';
 
 library AuctionParamsBuilder {
     function init() internal pure returns (AuctionParameters memory) {
@@ -15,9 +15,8 @@ library AuctionParamsBuilder {
             startBlock: 0,
             endBlock: 0,
             claimBlock: 0,
-            graduationThresholdMps: 0,
-            auctionStepsData: new bytes(0),
-            fundsRecipientData: new bytes(0)
+            requiredCurrencyRaised: 0,
+            auctionStepsData: new bytes(0)
         });
     }
 
@@ -135,12 +134,12 @@ library AuctionParamsBuilder {
         return params;
     }
 
-    function withGraduationThresholdMps(AuctionParameters memory params, uint24 graduationThresholdMps)
+    function withRequiredCurrencyRaised(AuctionParameters memory params, uint128 requiredCurrencyRaised)
         internal
         pure
         returns (AuctionParameters memory)
     {
-        params.graduationThresholdMps = graduationThresholdMps;
+        params.requiredCurrencyRaised = requiredCurrencyRaised;
         return params;
     }
 
@@ -150,15 +149,6 @@ library AuctionParamsBuilder {
         returns (AuctionParameters memory)
     {
         params.auctionStepsData = auctionStepsData;
-        return params;
-    }
-
-    function withFundsRecipientData(AuctionParameters memory params, bytes memory fundsRecipientData)
-        internal
-        pure
-        returns (AuctionParameters memory)
-    {
-        params.fundsRecipientData = fundsRecipientData;
         return params;
     }
 }

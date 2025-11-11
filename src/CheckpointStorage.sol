@@ -2,24 +2,15 @@
 pragma solidity 0.8.26;
 
 import {ICheckpointStorage} from './interfaces/ICheckpointStorage.sol';
-import {AuctionStepLib} from './libraries/AuctionStepLib.sol';
 import {Bid, BidLib} from './libraries/BidLib.sol';
+import {CheckpointAccountingLib} from './libraries/CheckpointAccountingLib.sol';
 import {Checkpoint, CheckpointLib} from './libraries/CheckpointLib.sol';
-import {Demand, DemandLib} from './libraries/DemandLib.sol';
 import {FixedPoint96} from './libraries/FixedPoint96.sol';
-import {FixedPointMathLib} from 'solady/utils/FixedPointMathLib.sol';
-import {SafeCastLib} from 'solady/utils/SafeCastLib.sol';
+import {ValueX7, ValueX7Lib} from './libraries/ValueX7Lib.sol';
 
 /// @title CheckpointStorage
 /// @notice Abstract contract for managing auction checkpoints and bid fill calculations
 abstract contract CheckpointStorage is ICheckpointStorage {
-    using FixedPointMathLib for *;
-    using AuctionStepLib for *;
-    using BidLib for *;
-    using SafeCastLib for uint256;
-    using DemandLib for Demand;
-    using CheckpointLib for Checkpoint;
-
     /// @notice Maximum block number value used as sentinel for last checkpoint
     uint64 public constant MAX_BLOCK_NUMBER = type(uint64).max;
 
@@ -34,13 +25,8 @@ abstract contract CheckpointStorage is ICheckpointStorage {
     }
 
     /// @inheritdoc ICheckpointStorage
-    function clearingPrice() public view returns (uint256) {
+    function clearingPrice() external view returns (uint256) {
         return _getCheckpoint($lastCheckpointedBlock).clearingPrice;
-    }
-
-    /// @inheritdoc ICheckpointStorage
-    function currencyRaised() public view returns (uint128) {
-        return _getCheckpoint($lastCheckpointedBlock).getCurrencyRaised();
     }
 
     /// @notice Get a checkpoint from storage
@@ -52,10 +38,16 @@ abstract contract CheckpointStorage is ICheckpointStorage {
     /// @dev This function updates the prev and next pointers of the latest checkpoint and the new checkpoint
     function _insertCheckpoint(Checkpoint memory checkpoint, uint64 blockNumber) internal {
         uint64 _lastCheckpointedBlock = $lastCheckpointedBlock;
-        if (_lastCheckpointedBlock != 0) $_checkpoints[_lastCheckpointedBlock].next = blockNumber;
+        // Enforce strictly increasing checkpoint block numbers
+        if (blockNumber <= _lastCheckpointedBlock) revert CheckpointBlockNotIncreasing();
+        // Link new checkpoint to the previous checkpoint
         checkpoint.prev = _lastCheckpointedBlock;
         checkpoint.next = MAX_BLOCK_NUMBER;
+        // Link previous checkpoint to the new checkpoint
+        $_checkpoints[_lastCheckpointedBlock].next = blockNumber;
+        // Write the new checkpoint
         $_checkpoints[blockNumber] = checkpoint;
+        // Update the last checkpointed block
         $lastCheckpointedBlock = blockNumber;
     }
 
@@ -66,75 +58,38 @@ abstract contract CheckpointStorage is ICheckpointStorage {
     /// @param startCheckpoint The start checkpoint of the bid
     /// @param bid The bid
     /// @return tokensFilled The tokens sold
-    /// @return currencySpent The amount of currency spent
+    /// @return currencySpentQ96 The amount of currency spent in Q96 form
     function _accountFullyFilledCheckpoints(Checkpoint memory upper, Checkpoint memory startCheckpoint, Bid memory bid)
         internal
         pure
-        returns (uint128 tokensFilled, uint128 currencySpent)
+        returns (uint256 tokensFilled, uint256 currencySpentQ96)
     {
-        (tokensFilled, currencySpent) = _calculateFill(
-            bid,
-            upper.cumulativeMpsPerPrice - startCheckpoint.cumulativeMpsPerPrice,
-            upper.cumulativeMps - startCheckpoint.cumulativeMps,
-            AuctionStepLib.MPS - startCheckpoint.cumulativeMps
-        );
+        return CheckpointAccountingLib.accountFullyFilledCheckpoints(upper, startCheckpoint, bid);
     }
 
     /// @notice Calculate the tokens sold and currency spent for a partially filled bid
-    /// @param cumulativeSupplySoldToClearingPrice The cumulative supply sold to the clearing price
-    /// @param bidDemand The demand of the bid
-    /// @param tickDemand The total demand at the tick
-    /// @param bidMaxPrice The max price of the bid
+    /// @param bid The bid
+    /// @param tickDemandQ96 The total demand at the tick
+    /// @param currencyRaisedAtClearingPriceQ96_X7 The cumulative supply sold to the clearing price
     /// @return tokensFilled The tokens sold
-    /// @return currencySpent The amount of currency spent
+    /// @return currencySpentQ96 The amount of currency spent in Q96 form
     function _accountPartiallyFilledCheckpoints(
-        uint256 cumulativeSupplySoldToClearingPrice,
-        uint128 bidDemand,
-        uint128 tickDemand,
-        uint256 bidMaxPrice
-    ) internal pure returns (uint128 tokensFilled, uint128 currencySpent) {
-        if (tickDemand == 0) return (0, 0);
-        // Expanded version of the math:
-        // tokensFilled = bidDemand * runningPartialFillRate * cumulativeMpsDelta / (MPS * Q96)
-        // tokensFilled = bidDemand * (cumulativeSupply * Q96 * MPS / tickDemand * cumulativeMpsDelta) * cumulativeMpsDelta / (mpsDenominator * Q96)
-        //              = bidDemand * (cumulativeSupply / tickDemand)
-        tokensFilled = uint128(bidDemand.fullMulDiv(cumulativeSupplySoldToClearingPrice, tickDemand));
-        currencySpent = uint128(tokensFilled.fullMulDivUp(bidMaxPrice, FixedPoint96.Q96));
-    }
-
-    /// @notice Calculate the tokens filled and currency spent for a bid
-    /// @dev This function uses lazy accounting to efficiently calculate fills across time periods without iterating through individual blocks.
-    ///      It MUST only be used when the bid's max price is strictly greater than the clearing price throughout the entire period being calculated.
-    /// @param bid the bid to evaluate
-    /// @param cumulativeMpsPerPriceDelta the cumulative sum of supply to price ratio
-    /// @param cumulativeMpsDelta the cumulative sum of mps values across the block range
-    /// @param mpsDenominator the percentage of the auction which the bid was spread over
-    /// @return tokensFilled the amount of tokens filled for this bid
-    /// @return currencySpent the amount of currency spent by this bid
-    function _calculateFill(
         Bid memory bid,
-        uint256 cumulativeMpsPerPriceDelta,
-        uint24 cumulativeMpsDelta,
-        uint24 mpsDenominator
-    ) internal pure returns (uint128 tokensFilled, uint128 currencySpent) {
-        tokensFilled = bid.exactIn
-            ? uint128(bid.amount.fullMulDiv(cumulativeMpsPerPriceDelta, FixedPoint96.Q96 * mpsDenominator))
-            : uint128(bid.amount.fullMulDiv(cumulativeMpsDelta, mpsDenominator));
-        // If tokensFilled is 0 then currencySpent must be 0
-        if (tokensFilled != 0) {
-            currencySpent = bid.exactIn
-                ? uint128(bid.amount.fullMulDivUp(cumulativeMpsDelta, mpsDenominator))
-                : uint128(tokensFilled.fullMulDivUp(cumulativeMpsDelta * FixedPoint96.Q96, cumulativeMpsPerPriceDelta));
-        }
+        uint256 tickDemandQ96,
+        ValueX7 currencyRaisedAtClearingPriceQ96_X7
+    ) internal pure returns (uint256 tokensFilled, uint256 currencySpentQ96) {
+        return CheckpointAccountingLib.accountPartiallyFilledCheckpoints(
+            bid, tickDemandQ96, currencyRaisedAtClearingPriceQ96_X7
+        );
     }
 
     /// @inheritdoc ICheckpointStorage
-    function lastCheckpointedBlock() external view override(ICheckpointStorage) returns (uint64) {
+    function lastCheckpointedBlock() external view returns (uint64) {
         return $lastCheckpointedBlock;
     }
 
     /// @inheritdoc ICheckpointStorage
-    function checkpoints(uint64 blockNumber) external view override(ICheckpointStorage) returns (Checkpoint memory) {
+    function checkpoints(uint64 blockNumber) external view returns (Checkpoint memory) {
         return $_checkpoints[blockNumber];
     }
 }

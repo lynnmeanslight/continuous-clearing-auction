@@ -1,55 +1,32 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import {Auction, AuctionParameters} from '../src/Auction.sol';
-import {AuctionFactory} from '../src/AuctionFactory.sol';
-import {IAuctionFactory} from '../src/interfaces/IAuctionFactory.sol';
-
+import {AuctionParameters, ContinuousClearingAuction} from '../src/ContinuousClearingAuction.sol';
+import {ContinuousClearingAuctionFactory} from '../src/ContinuousClearingAuctionFactory.sol';
+import {IContinuousClearingAuction} from '../src/interfaces/IContinuousClearingAuction.sol';
+import {IContinuousClearingAuctionFactory} from '../src/interfaces/IContinuousClearingAuctionFactory.sol';
 import {ITickStorage} from '../src/interfaces/ITickStorage.sol';
 import {ITokenCurrencyStorage} from '../src/interfaces/ITokenCurrencyStorage.sol';
 import {IDistributionContract} from '../src/interfaces/external/IDistributionContract.sol';
 import {IDistributionStrategy} from '../src/interfaces/external/IDistributionStrategy.sol';
+import {FixedPoint96} from '../src/libraries/FixedPoint96.sol';
+import {ValueX7Lib} from '../src/libraries/ValueX7Lib.sol';
+import {AuctionBaseTest} from './utils/AuctionBaseTest.sol';
 import {AuctionParamsBuilder} from './utils/AuctionParamsBuilder.sol';
 import {AuctionStepsBuilder} from './utils/AuctionStepsBuilder.sol';
-import {TokenHandler} from './utils/TokenHandler.sol';
-import {Test} from 'forge-std/Test.sol';
+import {FuzzDeploymentParams} from './utils/FuzzStructs.sol';
 
-contract AuctionFactoryTest is TokenHandler, Test {
+contract AuctionFactoryTest is AuctionBaseTest {
     using AuctionParamsBuilder for AuctionParameters;
     using AuctionStepsBuilder for bytes;
+    using ValueX7Lib for *;
 
-    AuctionFactory factory;
-    Auction auction;
-
-    uint256 public constant AUCTION_DURATION = 100;
-    uint256 public constant TICK_SPACING = 1e6;
-    uint128 public constant FLOOR_PRICE = 1e6;
-    uint128 public constant TOTAL_SUPPLY = 1000e18;
-
-    address public alice;
-    address public tokensRecipient;
-    address public fundsRecipient;
-
-    AuctionParameters public params;
-    bytes public auctionStepsData;
+    ContinuousClearingAuctionFactory factory;
 
     function setUp() public {
-        setUpTokens();
-
-        alice = makeAddr('alice');
-        tokensRecipient = makeAddr('tokensRecipient');
-        fundsRecipient = makeAddr('fundsRecipient');
-
-        // Setup base params
-        auctionStepsData = AuctionStepsBuilder.init().addStep(100e3, 100);
-        params = AuctionParamsBuilder.init().withCurrency(ETH_SENTINEL).withFloorPrice(FLOOR_PRICE).withTickSpacing(
-            TICK_SPACING
-        ).withValidationHook(address(0)).withTokensRecipient(tokensRecipient).withFundsRecipient(fundsRecipient)
-            .withStartBlock(block.number).withEndBlock(block.number + AUCTION_DURATION).withClaimBlock(
-            block.number + AUCTION_DURATION
-        ).withAuctionStepsData(auctionStepsData);
-
-        factory = new AuctionFactory();
+        // Setup non fuzz auction
+        setUpAuction();
+        factory = new ContinuousClearingAuctionFactory();
     }
 
     function test_initializeDistribution_createsAuction() public {
@@ -57,22 +34,29 @@ contract AuctionFactoryTest is TokenHandler, Test {
 
         // Expect the AuctionCreated event (don't check the auction address since it's deterministic)
         vm.expectEmit(false, true, true, true);
-        emit IAuctionFactory.AuctionCreated(address(0), address(token), TOTAL_SUPPLY, configData);
+        emit IContinuousClearingAuctionFactory.AuctionCreated(address(0), address(token), TOTAL_SUPPLY, configData);
 
         IDistributionContract distributionContract =
             factory.initializeDistribution(address(token), TOTAL_SUPPLY, configData, bytes32(0));
 
         // Verify the auction was created correctly
-        auction = Auction(payable(address(distributionContract)));
-        assertEq(address(auction.token()), address(token));
-        assertEq(auction.totalSupply(), TOTAL_SUPPLY);
-        assertEq(auction.floorPrice(), FLOOR_PRICE);
-        assertEq(auction.tickSpacing(), TICK_SPACING);
-        assertEq(auction.tokensRecipient(), tokensRecipient);
-        assertEq(auction.fundsRecipient(), fundsRecipient);
-        assertEq(auction.startBlock(), block.number);
-        assertEq(auction.endBlock(), block.number + AUCTION_DURATION);
-        assertEq(auction.claimBlock(), block.number + AUCTION_DURATION);
+        ContinuousClearingAuction _auction = ContinuousClearingAuction(payable(address(distributionContract)));
+        assertEq(address(_auction.token()), address(token));
+        assertEq(_auction.totalSupply(), TOTAL_SUPPLY);
+        assertEq(_auction.floorPrice(), FLOOR_PRICE);
+        assertEq(_auction.tickSpacing(), TICK_SPACING);
+        assertEq(_auction.tokensRecipient(), tokensRecipient);
+        assertEq(_auction.fundsRecipient(), fundsRecipient);
+        assertEq(_auction.startBlock(), block.number);
+        assertEq(_auction.endBlock(), block.number + AUCTION_DURATION);
+        assertEq(_auction.claimBlock(), block.number + AUCTION_DURATION + CLAIM_BLOCK_OFFSET);
+    }
+
+    function test_initializeDistribution_revertsWithInvalidClaimBlock() public {
+        uint256 endBlock = block.number + AUCTION_DURATION;
+        bytes memory configData = abi.encode(params.withClaimBlock(endBlock - 1));
+        vm.expectRevert(IContinuousClearingAuction.ClaimBlockIsBeforeEndBlock.selector);
+        factory.initializeDistribution(address(token), TOTAL_SUPPLY, configData, bytes32(0));
     }
 
     function test_initializeDistribution_createsAuction_withMsgSenderAsFundsRecipient() public {
@@ -84,15 +68,17 @@ contract AuctionFactoryTest is TokenHandler, Test {
 
         // Expect the AuctionCreated event (don't check the auction address since it's deterministic)
         vm.expectEmit(false, true, true, true);
-        emit IAuctionFactory.AuctionCreated(address(0), address(token), TOTAL_SUPPLY, expectedConfigData);
+        emit IContinuousClearingAuctionFactory.AuctionCreated(
+            address(0), address(token), TOTAL_SUPPLY, expectedConfigData
+        );
 
         vm.prank(sender);
         IDistributionContract distributionContract =
             factory.initializeDistribution(address(token), TOTAL_SUPPLY, configData, bytes32(0));
 
         // Verify the auction was created correctly
-        auction = Auction(payable(address(distributionContract)));
-        assertEq(auction.fundsRecipient(), address(sender));
+        ContinuousClearingAuction _auction = ContinuousClearingAuction(payable(address(distributionContract)));
+        assertEq(_auction.fundsRecipient(), address(sender));
     }
 
     function test_initializeDistribution_createsUniqueAddresses() public {
@@ -178,14 +164,32 @@ contract AuctionFactoryTest is TokenHandler, Test {
         IDistributionContract distributionContract =
             factory.initializeDistribution(address(token), TOTAL_SUPPLY, configData, bytes32(0));
 
-        auction = Auction(payable(address(distributionContract)));
+        ContinuousClearingAuction _auction = ContinuousClearingAuction(payable(address(distributionContract)));
 
         // Test that the auction can receive tokens (implements IDistributionContract)
-        token.mint(address(auction), TOTAL_SUPPLY);
-        auction.onTokensReceived();
+        token.mint(address(_auction), TOTAL_SUPPLY);
+        _auction.onTokensReceived();
 
         // Verify the auction has the correct token balance
-        assertEq(token.balanceOf(address(auction)), TOTAL_SUPPLY);
+        assertEq(token.balanceOf(address(_auction)), TOTAL_SUPPLY);
+    }
+
+    function testFuzz_getAuctionAddress(FuzzDeploymentParams memory _deploymentParams, bytes32 _salt, address _sender)
+        public
+    {
+        AuctionParameters memory _params = helper__validFuzzDeploymentParams(_deploymentParams);
+        bytes memory configData = abi.encode(_params);
+
+        // Predict the auction address
+        address auctionAddress =
+            factory.getAuctionAddress(address(token), $deploymentParams.totalSupply, configData, _salt, _sender);
+
+        // Create the actual auction
+        vm.prank(_sender);
+        IDistributionContract distributionContract =
+            factory.initializeDistribution(address(token), $deploymentParams.totalSupply, configData, _salt);
+
+        assertEq(auctionAddress, address(distributionContract));
     }
 
     function test_initializeDistribution_withZeroTotalSupply_reverts() public {
@@ -203,11 +207,12 @@ contract AuctionFactoryTest is TokenHandler, Test {
         factory.initializeDistribution(address(token), TOTAL_SUPPLY, configData, bytes32(0));
     }
 
-    function test_initializeDistribution_withZeroTickSpacing_reverts() public {
-        params = params.withTickSpacing(0);
+    function test_initializeDistribution_withTickSpacingTooSmall_fuzz(uint256 _tickSpacing) public {
+        _tickSpacing = _bound(_tickSpacing, 0, 1);
+        params = params.withTickSpacing(_tickSpacing);
         bytes memory configData = abi.encode(params);
 
-        vm.expectRevert(ITickStorage.TickSpacingIsZero.selector);
+        vm.expectRevert(ITickStorage.TickSpacingTooSmall.selector);
         factory.initializeDistribution(address(token), TOTAL_SUPPLY, configData, bytes32(0));
     }
 

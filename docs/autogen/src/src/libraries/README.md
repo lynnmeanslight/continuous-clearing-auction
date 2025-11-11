@@ -1,14 +1,19 @@
 
 
 # Contents
-- [AuctionStep](AuctionStepLib.sol/struct.AuctionStep.md)
-- [AuctionStepLib](AuctionStepLib.sol/library.AuctionStepLib.md)
 - [Bid](BidLib.sol/struct.Bid.md)
 - [BidLib](BidLib.sol/library.BidLib.md)
+- [CheckpointAccountingLib](CheckpointAccountingLib.sol/library.CheckpointAccountingLib.md)
 - [Checkpoint](CheckpointLib.sol/struct.Checkpoint.md)
 - [CheckpointLib](CheckpointLib.sol/library.CheckpointLib.md)
+- [ConstantsLib](ConstantsLib.sol/library.ConstantsLib.md)
 - [Currency](CurrencyLibrary.sol/type.Currency.md)
 - [CurrencyLibrary](CurrencyLibrary.sol/library.CurrencyLibrary.md)
-- [Demand](DemandLib.sol/struct.Demand.md)
-- [DemandLib](DemandLib.sol/library.DemandLib.md)
 - [FixedPoint96](FixedPoint96.sol/library.FixedPoint96.md)
+- [AuctionStep](StepLib.sol/struct.AuctionStep.md)
+- [StepLib](StepLib.sol/library.StepLib.md)
+- [ValidationHookLib](ValidationHookLib.sol/library.ValidationHookLib.md)
+- [ValueX7](ValueX7Lib.sol/type.ValueX7.md)
+- [ValueX7Lib](ValueX7Lib.sol/library.ValueX7Lib.md)
+- [divUint256](ValueX7Lib.sol/function.divUint256.md)
+- [sub](ValueX7Lib.sol/function.sub.md)

@@ -3,36 +3,36 @@ pragma solidity 0.8.26;
 
 import {ITokenCurrencyStorage} from './interfaces/ITokenCurrencyStorage.sol';
 import {IERC20Minimal} from './interfaces/external/IERC20Minimal.sol';
-import {AuctionStepLib} from './libraries/AuctionStepLib.sol';
+import {ConstantsLib} from './libraries/ConstantsLib.sol';
 import {Currency, CurrencyLibrary} from './libraries/CurrencyLibrary.sol';
-import {FixedPointMathLib} from 'solady/utils/FixedPointMathLib.sol';
+import {FixedPoint96} from './libraries/FixedPoint96.sol';
+import {ValueX7, ValueX7Lib} from './libraries/ValueX7Lib.sol';
 
 /// @title TokenCurrencyStorage
 abstract contract TokenCurrencyStorage is ITokenCurrencyStorage {
-    using FixedPointMathLib for uint128;
-    /// @notice The currency being raised in the auction
+    using ValueX7Lib for *;
+    using CurrencyLibrary for Currency;
 
-    Currency public immutable currency;
+    /// @notice The currency being raised in the auction
+    Currency internal immutable CURRENCY;
     /// @notice The token being sold in the auction
-    IERC20Minimal public immutable token;
+    IERC20Minimal internal immutable TOKEN;
     /// @notice The total supply of tokens to sell
-    /// @dev The auction does not support selling more than type(uint128).max tokens
-    uint128 public immutable totalSupply;
+    uint128 internal immutable TOTAL_SUPPLY;
+    /// @notice The total supply of tokens to sell in 160.96 form
+    uint256 internal immutable TOTAL_SUPPLY_Q96;
     /// @notice The recipient of any unsold tokens at the end of the auction
-    address public immutable tokensRecipient;
+    address internal immutable TOKENS_RECIPIENT;
     /// @notice The recipient of the raised Currency from the auction
-    address public immutable fundsRecipient;
-    /// @notice The minimum percentage of the total supply that must be sold
-    uint24 public immutable graduationThresholdMps;
-    /// @notice The amount of supply that must be sold for the auction to graduate, saved for gas optimization
-    uint128 public immutable requiredSupplySoldForGraduation;
+    address internal immutable FUNDS_RECIPIENT;
+    /// @notice The amount of currency required to be raised for the auction
+    ///         to graduate in Q96 form, scaled up by X7
+    ValueX7 internal immutable REQUIRED_CURRENCY_RAISED_Q96_X7;
 
     /// @notice The block at which the currency was swept
     uint256 public sweepCurrencyBlock;
     /// @notice The block at which the tokens were swept
     uint256 public sweepUnsoldTokensBlock;
-    /// @notice The data to pass to the fundsRecipient
-    bytes public fundsRecipientData;
 
     constructor(
         address _token,
@@ -40,50 +40,62 @@ abstract contract TokenCurrencyStorage is ITokenCurrencyStorage {
         uint128 _totalSupply,
         address _tokensRecipient,
         address _fundsRecipient,
-        uint24 _graduationThresholdMps,
-        bytes memory _fundsRecipientData
+        uint128 _requiredCurrencyRaised
     ) {
-        token = IERC20Minimal(_token);
-        currency = Currency.wrap(_currency);
-        totalSupply = _totalSupply;
-        tokensRecipient = _tokensRecipient;
-        fundsRecipient = _fundsRecipient;
-        graduationThresholdMps = _graduationThresholdMps;
-        fundsRecipientData = _fundsRecipientData;
-
         if (_token == address(0)) revert TokenIsAddressZero();
-        if (_token == address(_currency)) revert TokenAndCurrencyCannotBeTheSame();
-        if (totalSupply == 0) revert TotalSupplyIsZero();
-        if (tokensRecipient == address(0)) revert TokensRecipientIsZero();
-        if (fundsRecipient == address(0)) revert FundsRecipientIsZero();
-        if (graduationThresholdMps > AuctionStepLib.MPS) revert InvalidGraduationThresholdMps();
+        if (_token == _currency) revert TokenAndCurrencyCannotBeTheSame();
+        if (_totalSupply == 0) revert TotalSupplyIsZero();
+        if (_tokensRecipient == address(0)) revert TokensRecipientIsZero();
+        if (_fundsRecipient == address(0)) revert FundsRecipientIsZero();
 
-        // Calculate the required supply sold for graduation, rounding up to sell at least the amount required by the graduation threshold
-        requiredSupplySoldForGraduation = uint128(totalSupply.fullMulDivUp(graduationThresholdMps, AuctionStepLib.MPS));
+        TOKEN = IERC20Minimal(_token);
+        CURRENCY = Currency.wrap(_currency);
+        TOTAL_SUPPLY = _totalSupply;
+        TOTAL_SUPPLY_Q96 = uint256(_totalSupply) << FixedPoint96.RESOLUTION;
+        TOKENS_RECIPIENT = _tokensRecipient;
+        FUNDS_RECIPIENT = _fundsRecipient;
+        REQUIRED_CURRENCY_RAISED_Q96_X7 = (uint256(_requiredCurrencyRaised) << FixedPoint96.RESOLUTION).scaleUpToX7();
     }
 
     function _sweepCurrency(uint256 amount) internal {
         sweepCurrencyBlock = block.number;
-        // First transfer the currency to the fundsRecipient
-        currency.transfer(fundsRecipient, amount);
-        // Then if fundsRecipientData is set and is a contract, call it
-        if (fundsRecipientData.length > 0 && fundsRecipient.code.length > 0 && fundsRecipient != address(this)) {
-            (bool success, bytes memory result) = fundsRecipient.call(fundsRecipientData);
-            if (!success) {
-                // bubble up the revert reason
-                assembly {
-                    revert(add(result, 0x20), mload(result))
-                }
-            }
+        if (amount > 0) {
+            CURRENCY.transfer(FUNDS_RECIPIENT, amount);
         }
-        emit CurrencySwept(fundsRecipient, amount);
+        emit CurrencySwept(FUNDS_RECIPIENT, amount);
     }
 
     function _sweepUnsoldTokens(uint256 amount) internal {
         sweepUnsoldTokensBlock = block.number;
         if (amount > 0) {
-            Currency.wrap(address(token)).transfer(tokensRecipient, amount);
+            Currency.wrap(address(TOKEN)).transfer(TOKENS_RECIPIENT, amount);
         }
-        emit TokensSwept(tokensRecipient, amount);
+        emit TokensSwept(TOKENS_RECIPIENT, amount);
+    }
+
+    // Getters
+    /// @inheritdoc ITokenCurrencyStorage
+    function currency() external view returns (Currency) {
+        return CURRENCY;
+    }
+
+    /// @inheritdoc ITokenCurrencyStorage
+    function token() external view returns (IERC20Minimal) {
+        return TOKEN;
+    }
+
+    /// @inheritdoc ITokenCurrencyStorage
+    function totalSupply() external view returns (uint128) {
+        return TOTAL_SUPPLY;
+    }
+
+    /// @inheritdoc ITokenCurrencyStorage
+    function tokensRecipient() external view returns (address) {
+        return TOKENS_RECIPIENT;
+    }
+
+    /// @inheritdoc ITokenCurrencyStorage
+    function fundsRecipient() external view returns (address) {
+        return FUNDS_RECIPIENT;
     }
 }

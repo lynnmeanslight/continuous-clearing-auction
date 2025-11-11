@@ -3,46 +3,49 @@ src = "src"
 out = "out"
 libs = ["lib"]
 optimizer = true
-optimizer_runs = 1000
+optimizer_runs = 88888888
 via_ir = true
 solc = "0.8.26"
 verbosity = 2
 ffi = true
 fs_permissions = [
-  { access = "read-write", path = ".forge-snapshots"},
-  { access = "read", path = "script/" }
+  { access = "read-write", path = ".forge-snapshots" },
+  { access = "read", path = "script/" },
 ]
+extra_output = ["storageLayout"]
 
 remappings = [
   "forge-std=lib/forge-std/src",
   "@openzeppelin/contracts=lib/openzeppelin-contracts/contracts",
   "@openzeppelin/contracts-upgradeable=lib/openzeppelin-contracts-upgradeable/contracts",
   "solady=lib/solady/src",
-  "permit2=lib/permit2"
+  "permit2=lib/permit2",
+  "v4-periphery=lib/v4-periphery",
+  "continuous-clearing-auction=src/",
+  "test=test/",
+  "btt=test/btt/",
 ]
 
-additional_compiler_profiles = [
-  { name = "test", via_ir = false }
-]
+additional_compiler_profiles = [{ name = "test", via_ir = false }]
 
 compilation_restrictions = [
   { paths = "src/AuctionFactory.sol", via_ir = false, optimizer = false, optimzer_runs = 0 },
-  { paths = "test/**", via_ir = false }
+  { paths = "test/**", via_ir = false },
 ]
 
 [profile.default.fuzz]
-runs = 1000
+runs = 2500
 
 [profile.default.invariant]
 fail_on_revert = true
-runs = 100
-depth = 200
+runs = 10
+depth = 1000
 
 [profile.pr.fuzz]
-runs = 10000
+runs = 2500
 
 [profile.ci.fuzz]
-runs = 100000
+runs = 2500
 
 [profile.debug]
 via_ir = false
@@ -55,3 +58,6 @@ tab_width = 4
 quote_style = "single"
 sort_imports = true
 number_underscore = "thousands"
+
+[lint]
+exclude_lints = ["mixed-case-variable"]

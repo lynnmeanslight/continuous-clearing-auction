@@ -6,8 +6,8 @@ import {Tick} from '../TickStorage.sol';
 /// @title ITickStorage
 /// @notice Interface for the TickStorage contract
 interface ITickStorage {
-    /// @notice Error thrown when the tick spacing is zero
-    error TickSpacingIsZero();
+    /// @notice Error thrown when the tick spacing is too small
+    error TickSpacingTooSmall();
     /// @notice Error thrown when the floor price is zero
     error FloorPriceIsZero();
     /// @notice Error thrown when the previous price hint is invalid (higher than the new price)
@@ -18,6 +18,8 @@ interface ITickStorage {
     error TickPriceNotAtBoundary();
     /// @notice Error thrown when the tick price is invalid
     error InvalidTickPrice();
+    /// @notice Error thrown when trying to update the demand of an uninitialized tick
+    error CannotUpdateUninitializedTick();
 
     /// @notice Emitted when a tick is initialized
     /// @param price The price of the tick
@@ -41,5 +43,8 @@ interface ITickStorage {
     function tickSpacing() external view returns (uint256);
 
     /// @notice Get a tick at a price
+    /// @dev The returned tick is not guaranteed to be initialized
+    /// @param price The price of the tick, which must be at a boundary designated by the tick spacing
+    /// @return The tick at the given price
     function ticks(uint256 price) external view returns (Tick memory);
 }

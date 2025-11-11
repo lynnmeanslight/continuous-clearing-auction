@@ -14,26 +14,28 @@ abstract contract BidStorage is IBidStorage {
     /// @notice Get a bid from storage
     /// @param bidId The id of the bid to get
     /// @return bid The bid
-    function _getBid(uint256 bidId) internal view returns (Bid memory) {
+    function _getBid(uint256 bidId) internal view returns (Bid storage) {
+        if (bidId >= $_nextBidId) revert BidIdDoesNotExist(bidId);
         return $_bids[bidId];
     }
 
     /// @notice Create a new bid
-    /// @param exactIn Whether the bid is exact in
     /// @param amount The amount of the bid
     /// @param owner The owner of the bid
     /// @param maxPrice The maximum price for the bid
+    /// @param startCumulativeMps The cumulative mps at the start of the bid
+    /// @return bid The created bid
     /// @return bidId The id of the created bid
-    function _createBid(bool exactIn, uint128 amount, address owner, uint256 maxPrice)
+    function _createBid(uint256 amount, address owner, uint256 maxPrice, uint24 startCumulativeMps)
         internal
-        returns (uint256 bidId)
+        returns (Bid memory bid, uint256 bidId)
     {
-        Bid memory bid = Bid({
-            exactIn: exactIn,
+        bid = Bid({
             startBlock: uint64(block.number),
+            startCumulativeMps: startCumulativeMps,
             exitedBlock: 0,
             maxPrice: maxPrice,
-            amount: amount,
+            amountQ96: amount,
             owner: owner,
             tokensFilled: 0
         });
@@ -43,27 +45,14 @@ abstract contract BidStorage is IBidStorage {
         $_nextBidId++;
     }
 
-    /// @notice Update a bid in storage
-    /// @param bidId The id of the bid to update
-    /// @param bid The new bid
-    function _updateBid(uint256 bidId, Bid memory bid) internal {
-        $_bids[bidId] = bid;
-    }
-
-    /// @notice Delete a bid from storage
-    /// @param bidId The id of the bid to delete
-    function _deleteBid(uint256 bidId) internal {
-        delete $_bids[bidId];
-    }
-
     /// Getters
     /// @inheritdoc IBidStorage
-    function nextBidId() external view override(IBidStorage) returns (uint256) {
+    function nextBidId() external view returns (uint256) {
         return $_nextBidId;
     }
 
     /// @inheritdoc IBidStorage
-    function bids(uint256 bidId) external view override(IBidStorage) returns (Bid memory) {
-        return $_bids[bidId];
+    function bids(uint256 bidId) external view returns (Bid memory) {
+        return _getBid(bidId);
     }
 }

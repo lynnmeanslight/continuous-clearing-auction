@@ -1,93 +1,60 @@
 # BidLib
-[Git Source](https://github.com/Uniswap/twap-auction/blob/163a9c5caa0e1ad086f86fa796c27a59e36ff096/src/libraries/BidLib.sol)
+[Git Source](https://github.com/Uniswap/twap-auction/blob/468d53629b7c1620881cec3814c348b60ec958e9/src/libraries/BidLib.sol)
 
 
 ## Functions
-### effectiveAmount
+### mpsRemainingInAuctionAfterSubmission
 
-Calculate the effective amount of a bid based on the mps denominator
+Calculate the number of mps remaining in the auction since the bid was submitted
 
 
 ```solidity
-function effectiveAmount(uint128 amount, uint24 mpsDenominator) internal pure returns (uint128);
+function mpsRemainingInAuctionAfterSubmission(Bid memory bid) internal pure returns (uint24);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`amount`|`uint128`|The amount of the bid|
-|`mpsDenominator`|`uint24`|The percentage of the auction which the bid was spread over|
+|`bid`|`Bid`|The bid to calculate the remaining mps for|
 
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`uint128`|The effective amount of the bid|
+|`<none>`|`uint24`|The number of mps remaining in the auction|
 
 
-### demand
+### toEffectiveAmount
 
-Resolve the demand of a bid at its maxPrice
+Scale a bid amount to its effective amount over the remaining percentage of the auction
+This is an important normalization step to ensure that we can calculate the currencyRaised
+when cumulative demand is less than supply using the original supply schedule.
 
 
 ```solidity
-function demand(Bid memory bid, uint24 mpsDenominator) internal pure returns (uint128);
+function toEffectiveAmount(Bid memory bid) internal pure returns (uint256);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`bid`|`Bid`|The bid|
-|`mpsDenominator`|`uint24`|The percentage of the auction which the bid was spread over|
+|`bid`|`Bid`|The bid to scale|
 
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`uint128`|The demand of the bid|
+|`<none>`|`uint256`|The scaled amount|
 
 
-### inputAmount
-
-Calculate the input amount required for an amount and maxPrice
+## Errors
+### MpsRemainingIsZero
+Error thrown when a bid is submitted with no remaining percentage of the auction
+This is prevented by the auction contract as bids cannot be submitted when the auction is sold out,
+but we catch it instead of reverting with division by zero.
 
 
 ```solidity
-function inputAmount(bool exactIn, uint128 amount, uint256 maxPrice) internal pure returns (uint128);
+error MpsRemainingIsZero();
 ```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`exactIn`|`bool`|Whether the bid is exact in|
-|`amount`|`uint128`|The amount of the bid|
-|`maxPrice`|`uint256`|The max price of the bid|
-
-**Returns**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`<none>`|`uint128`|The input amount required for an amount and maxPrice|
-
-
-### inputAmount
-
-Calculate the input amount required to place the bid
-
-
-```solidity
-function inputAmount(Bid memory bid) internal pure returns (uint128);
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`bid`|`Bid`|The bid|
-
-**Returns**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`<none>`|`uint128`|The input amount required to place the bid|
-
 

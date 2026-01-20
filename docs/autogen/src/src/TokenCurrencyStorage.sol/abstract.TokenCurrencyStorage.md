@@ -1,5 +1,5 @@
 # TokenCurrencyStorage
-[Git Source](https://github.com/Uniswap/twap-auction/blob/000be74c9fb6e92005b3e6aff5f612cf221eaa8e/src/TokenCurrencyStorage.sol)
+[Git Source](https://github.com/Uniswap/twap-auction/blob/c9923b6612650531d4151de2f459778059410469/src/TokenCurrencyStorage.sol)
 
 **Inherits:**
 [ITokenCurrencyStorage](/src/interfaces/ITokenCurrencyStorage.sol/interface.ITokenCurrencyStorage.md)
@@ -110,58 +110,13 @@ constructor(
 
 
 ```solidity
-function _sweepCurrency(uint256 amount) internal;
+function _sweepCurrency(uint256 _blockNumberIsh, uint256 _amount) internal;
 ```
 
 ### _sweepUnsoldTokens
 
 
 ```solidity
-function _sweepUnsoldTokens(uint256 amount) internal;
-```
-
-### currency
-
-The currency being raised in the auction
-
-
-```solidity
-function currency() external view returns (Currency);
-```
-
-### token
-
-The token being sold in the auction
-
-
-```solidity
-function token() external view returns (IERC20Minimal);
-```
-
-### totalSupply
-
-The total supply of tokens to sell
-
-
-```solidity
-function totalSupply() external view returns (uint128);
-```
-
-### tokensRecipient
-
-The recipient of any unsold tokens at the end of the auction
-
-
-```solidity
-function tokensRecipient() external view returns (address);
-```
-
-### fundsRecipient
-
-The recipient of the raised Currency from the auction
-
-
-```solidity
-function fundsRecipient() external view returns (address);
+function _sweepUnsoldTokens(uint256 _blockNumberIsh, uint256 _amount) internal;
 ```
 

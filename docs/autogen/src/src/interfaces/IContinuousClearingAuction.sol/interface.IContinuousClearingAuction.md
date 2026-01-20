@@ -1,8 +1,8 @@
 # IContinuousClearingAuction
-[Git Source](https://github.com/Uniswap/twap-auction/blob/000be74c9fb6e92005b3e6aff5f612cf221eaa8e/src/interfaces/IContinuousClearingAuction.sol)
+[Git Source](https://github.com/Uniswap/twap-auction/blob/c9923b6612650531d4151de2f459778059410469/src/interfaces/IContinuousClearingAuction.sol)
 
 **Inherits:**
-[IDistributionContract](/src/interfaces/external/IDistributionContract.sol/interface.IDistributionContract.md), [ICheckpointStorage](/src/interfaces/ICheckpointStorage.sol/interface.ICheckpointStorage.md), [ITickStorage](/src/interfaces/ITickStorage.sol/interface.ITickStorage.md), [IStepStorage](/src/interfaces/IStepStorage.sol/interface.IStepStorage.md), [ITokenCurrencyStorage](/src/interfaces/ITokenCurrencyStorage.sol/interface.ITokenCurrencyStorage.md), [IBidStorage](/src/interfaces/IBidStorage.sol/interface.IBidStorage.md)
+[ILBPInitializer](/src/interfaces/external/ILBPInitializer.sol/interface.ILBPInitializer.md), [ICheckpointStorage](/src/interfaces/ICheckpointStorage.sol/interface.ICheckpointStorage.md), [ITickStorage](/src/interfaces/ITickStorage.sol/interface.ITickStorage.md), [IStepStorage](/src/interfaces/IStepStorage.sol/interface.IStepStorage.md), [ITokenCurrencyStorage](/src/interfaces/ITokenCurrencyStorage.sol/interface.ITokenCurrencyStorage.md), [IBidStorage](/src/interfaces/IBidStorage.sol/interface.IBidStorage.md)
 
 Interface for the ContinuousClearingAuction contract
 
@@ -83,6 +83,27 @@ function checkpoint() external returns (Checkpoint memory _checkpoint);
 |Name|Type|Description|
 |----|----|-----------|
 |`_checkpoint`|`Checkpoint`|The checkpoint at the current block|
+
+
+### clearingPrice
+
+Get the most up to date clearing price
+
+This will be at least as up to date as the latest checkpoint. It can be incremented from calls to `forceIterateOverTicks`
+
+Callers MUST ensure that the latest checkpoint is up to date before using this function.
+
+Additionally, it is recommended to use this function instead of reading the clearingPrice from the latest checkpoint.
+
+
+```solidity
+function clearingPrice() external view returns (uint256);
+```
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`uint256`|The current clearing price in Q96 form|
 
 
 ### isGraduated
@@ -209,6 +230,96 @@ Can be called by anyone after the auction has ended
 function sweepCurrency() external;
 ```
 
+### supportsInterface
+
+Implements IERC165.supportsInterface to signal support for the ILBPInitializer interface
+
+
+```solidity
+function supportsInterface(bytes4 interfaceId) external view override(IERC165) returns (bool);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`interfaceId`|`bytes4`|The interface identifier to check|
+
+
+### currency
+
+The currency being raised in the auction
+
+
+```solidity
+function currency() external view returns (address);
+```
+
+### token
+
+The token being sold in the auction
+
+
+```solidity
+function token() external view returns (address);
+```
+
+### totalSupply
+
+The total supply of tokens to sell
+
+
+```solidity
+function totalSupply() external view returns (uint128);
+```
+
+### tokensRecipient
+
+The recipient of any unsold tokens at the end of the auction
+
+
+```solidity
+function tokensRecipient() external view returns (address);
+```
+
+### fundsRecipient
+
+The recipient of the raised currency from the auction
+
+
+```solidity
+function fundsRecipient() external view returns (address);
+```
+
+### startBlock
+
+The block at which the auction starts
+
+
+```solidity
+function startBlock() external view override(ILBPInitializer) returns (uint64);
+```
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`uint64`|The starting block number|
+
+
+### endBlock
+
+The block at which the auction ends
+
+
+```solidity
+function endBlock() external view override(ILBPInitializer) returns (uint64);
+```
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`uint64`|The ending block number|
+
+
 ### claimBlock
 
 The block at which the auction can be claimed
@@ -240,7 +351,9 @@ function sweepUnsoldTokens() external;
 
 ### currencyRaisedQ96_X7
 
-The currency raised as of the last checkpoint
+The currency raised as of the last checkpoint in Q96 representation, scaled up by X7
+
+Most use cases will want to use `currencyRaised()` instead
 
 
 ```solidity
@@ -258,7 +371,9 @@ function sumCurrencyDemandAboveClearingQ96() external view returns (uint256);
 
 ### totalClearedQ96_X7
 
-The total currency raised as of the last checkpoint
+The total currency raised as of the last checkpoint in Q96 representation, scaled up by X7
+
+Most use cases will want to use `totalCleared()` instead
 
 
 ```solidity
@@ -562,6 +677,14 @@ Error thrown when the auction is not over
 error AuctionIsNotOver();
 ```
 
+### AuctionIsNotFinalized
+Error thrown when the end block is not checkpointed
+
+
+```solidity
+error AuctionIsNotFinalized();
+```
+
 ### InvalidBidUnableToClear
 Error thrown when the bid is too large
 
@@ -576,5 +699,13 @@ Error thrown when the auction has sold the entire total supply of tokens
 
 ```solidity
 error AuctionSoldOut();
+```
+
+### TickHintMustBeGreaterThanNextActiveTickPrice
+Error thrown when the tick price is not greater than the next active tick price
+
+
+```solidity
+error TickHintMustBeGreaterThanNextActiveTickPrice(uint256 tickPrice, uint256 nextActiveTickPrice);
 ```
 

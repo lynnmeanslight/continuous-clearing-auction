@@ -58,45 +58,19 @@ abstract contract TokenCurrencyStorage is ITokenCurrencyStorage {
         REQUIRED_CURRENCY_RAISED_Q96_X7 = (uint256(_requiredCurrencyRaised) << FixedPoint96.RESOLUTION).scaleUpToX7();
     }
 
-    function _sweepCurrency(uint256 amount) internal {
-        sweepCurrencyBlock = block.number;
-        if (amount > 0) {
-            CURRENCY.transfer(FUNDS_RECIPIENT, amount);
+    function _sweepCurrency(uint256 _blockNumberIsh, uint256 _amount) internal {
+        sweepCurrencyBlock = _blockNumberIsh;
+        if (_amount > 0) {
+            CURRENCY.transfer(FUNDS_RECIPIENT, _amount);
         }
-        emit CurrencySwept(FUNDS_RECIPIENT, amount);
+        emit CurrencySwept(FUNDS_RECIPIENT, _amount);
     }
 
-    function _sweepUnsoldTokens(uint256 amount) internal {
-        sweepUnsoldTokensBlock = block.number;
-        if (amount > 0) {
-            Currency.wrap(address(TOKEN)).transfer(TOKENS_RECIPIENT, amount);
+    function _sweepUnsoldTokens(uint256 _blockNumberIsh, uint256 _amount) internal {
+        sweepUnsoldTokensBlock = _blockNumberIsh;
+        if (_amount > 0) {
+            Currency.wrap(address(TOKEN)).transfer(TOKENS_RECIPIENT, _amount);
         }
-        emit TokensSwept(TOKENS_RECIPIENT, amount);
-    }
-
-    // Getters
-    /// @inheritdoc ITokenCurrencyStorage
-    function currency() external view returns (Currency) {
-        return CURRENCY;
-    }
-
-    /// @inheritdoc ITokenCurrencyStorage
-    function token() external view returns (IERC20Minimal) {
-        return TOKEN;
-    }
-
-    /// @inheritdoc ITokenCurrencyStorage
-    function totalSupply() external view returns (uint128) {
-        return TOTAL_SUPPLY;
-    }
-
-    /// @inheritdoc ITokenCurrencyStorage
-    function tokensRecipient() external view returns (address) {
-        return TOKENS_RECIPIENT;
-    }
-
-    /// @inheritdoc ITokenCurrencyStorage
-    function fundsRecipient() external view returns (address) {
-        return FUNDS_RECIPIENT;
+        emit TokensSwept(TOKENS_RECIPIENT, _amount);
     }
 }

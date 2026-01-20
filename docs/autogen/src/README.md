@@ -1,44 +1,54 @@
 # Continuous Clearing Auction
 
-This repository contains the smart contracts for the Continuous Clearing Auction and its Factory. It is meant to be used in combination with the [Uniswap Liquidity Launcher](https://github.com/Uniswap/liquidity-launcher) as a strategy for raising funds.
+This repository contains the smart contracts for Continuous Clearing Auctions (CCAs). It is intended to be used in combination with the [Uniswap Liquidity Launcher](https://github.com/Uniswap/liquidity-launcher) contracts suite.
+
+## Table of Contents
+
+- [Installation](#installation)
+- [Deployments](#deployments)
+- [Audits](#audits)
+- [Docs](#docs)
+- [Repository Structure](#repository-structure)
+- [License](#license)
+
+## Overview
+
+CCA is a novel auction mechanism that generalizes the uniform-price auction into continuous time. It provides fair price discovery for bootstrapping initial liquidity while eliminating timing games and encouraging early participation (see [whitepaper](./docs/assets/whitepaper.pdf)).
+
+The contracts can be used as a standalone auction or a part of a larger token distribution system. All contracts are MIT licensed.
 
 ## Installation
 
 ```bash
 forge install
-```
-
-## Testing
-
-```bash
+forge build
 forge test
 ```
 
-### pre-commit hooks
+## Deployments
 
-```bash
-pre-commit install
-pre-commit run --all-files
-```
+CCA instances are deployed via the [ContinuousClearingAuctionFactory](./src/ContinuousClearingAuctionFactory.sol).
 
-## Deployment Addresses
+Addresses are cannonical across select EVM chains.
 
 ### ContinuousClearingAuctionFactory
 
 | Network  | Address                                    | Commit Hash                              | Version          |
 | -------- | ------------------------------------------ | ---------------------------------------- | ---------------- |
-| Mainnet  | 0x0000ccaDF55C911a2FbC0BB9d2942Aa77c6FAa1D | 154fd189022858707837112943c09346869c964f | v1.0.0-candidate |
-| Unichain | 0x0000ccaDF55C911a2FbC0BB9d2942Aa77c6FAa1D | 154fd189022858707837112943c09346869c964f | v1.0.0-candidate |
-| Base     | 0x0000ccaDF55C911a2FbC0BB9d2942Aa77c6FAa1D | 154fd189022858707837112943c09346869c964f | v1.0.0-candidate |
-| Sepolia  | 0x0000ccaDF55C911a2FbC0BB9d2942Aa77c6FAa1D | 154fd189022858707837112943c09346869c964f | v1.0.0-candidate |
+| v1.1.0   | 0xcca110c1136B93Eb113cceae3C25e52E180B32C9 |                                          |                  |
+| v1.0.0\* | 0x0000ccaDF55C911a2FbC0BB9d2942Aa77c6FAa1D | 154fd189022858707837112943c09346869c964f | v1.0.0-candidate |
+
+> \*v1.0.0-candidate is the initial version of CCA and is NOT recommended for production use. For more details, see the [Changelog](./docs/CHANGELOG.md).
 
 ## Audits
 
-- 11/11/2025: [Spearbit](./docs/audits/Spearbit_Nov_11_2025.pdf)
-- 10/21/2025: [OpenZeppelin](./docs/audits/OpenZeppelin_v1.0.0.pdf)
-- 10/19/2025: [Spearbit](./docs/audits/Spearbit_v1.0.0.pdf.pdf)
-- 10/19/2025: [ABDK Consulting](./docs/audits/ABDK_Uniswap_TWAPAuction_v_1_0.pdf)
-- 08/25/2025: [OpenZeppelin](./docs/audits/OpenZeppelin_v0.pdf)
+| Version | Date       | Report                                                              |
+| ------- | ---------- | ------------------------------------------------------------------- |
+| v1.0.0  | 11/11/2025 | [Spearbit](./docs/audits/Spearbit_Nov_11_2025.pdf)                  |
+| v1.0.0  | 10/21/2025 | [OpenZeppelin](./docs/audits/OpenZeppelin_v1.0.0.pdf)               |
+| v1.0.0  | 10/19/2025 | [Spearbit](./docs/audits/Spearbit_v1.0.0.pdf)                       |
+| v1.0.0  | 10/19/2025 | [ABDK Consulting](./docs/audits/ABDK_Uniswap_TWAPAuction_v_1_0.pdf) |
+| v1.0.0  | 08/25/2025 | [OpenZeppelin](./docs/audits/OpenZeppelin_v0.pdf)                   |
 
 ### Bug bounty
 
@@ -52,25 +62,11 @@ security@uniswap.org
 
 The [whitepaper](./docs/assets/whitepaper.pdf) for the Continuous Clearing Auction.
 
-## Risks from participating in the auction
+## Docs
 
-### Bidders must validate all parameters
-
-An Auction can be configured with:
-
-- Excessively high floor prices which would result in a loss of funds for participants.
-- Extreme start and end blocks which would prevent bidders from receiving refunds of currency or tokens.
-- Honeypot or malicious tokens
-- An unrealistic `requiredCurrencyRaised` which would prevent the auction from graduating.
-- A `positionRecipient` who will withdraw the liquidity position immediately after the pool is created.
-
-This list is not exhaustive. It is the responsibility of the bidder to validate all parameters before participating in an auction.
-
-### Undesireable behavior with low-decimal tokens or Fee On Transfer tokens
-
-Do NOT use the Auction with low-decimal (< 6) tokens. Bidders will lose significant amounts of token due to rounding errors in price and amount calculations.
-
-Fee On Transfer tokens are explicitly not supported as either `token` or `currency`.
+- [Technical documentation](./docs/TechnicalDocumentation.md)
+- [Changelog](./docs/CHANGELOG.md)
+- [Deployment guide](./docs/DeploymentGuide.md)
 
 ## Repository Structure
 
@@ -93,6 +89,8 @@ test/
 ----Auction.t.sol
 ----Auction.invariant.t.sol
 ```
+
+# <<<<<<< HEAD
 
 ### Auction Configuration
 
@@ -369,9 +367,11 @@ Anyone can call this function for any valid bid ids.
 ## Integration risks
 
 ### Incorrect configuration of the auction parameters
+
 CCA auctions are highly configurable. As such, it is important to ensure that the configurations of each auction instance are not only correct but protect against known risks.
 
 Ensure that the following parameters are correctly set:
+
 - `token` and `currency`
 - `totalSupply` is not too large (see [note on total supply and maximum bid price](#note-on-total-supply-and-maximum-bid-price) below)
 - `startBlock`, `endBlock`, and `claimBlock`
@@ -381,6 +381,7 @@ Ensure that the following parameters are correctly set:
 - `auctionStepsData` avoids common pitfalls (see [note on auction steps](#note-on-auction-steps) below)
 
 ### Note on total supply and maximum bid price
+
 The following limitations regarding total supply and maximum bid prices should be considered:
 
 - The maximum total supply that can be sold in the auction is 1e30 wei of `token`. For a token with 18 decimals, this is 1 trillion tokens.
@@ -394,18 +395,22 @@ Given a total supply of:
 We strongly recommend that the `currency` is chosen to be more valuable than `token`, and that the total supply is not excessively large.
 
 ### Note on ticks
+
 Ticks in the auction govern where bids can be placed. They have no impact on the potential clearingPrices of the auction and merely serve to prevent users from being outbid by others by infinitesimally small amounts and for gas efficiency in finding new clearing prices.
 
 Generally integrators should choose a tick spacing of AT LEAST 1 basis point of the floor price. 1% or 10% is also reasonable.
 
-Setting too small of a tick spacing will make the auction extremely gas inefficient, and in specific cases, can result in a DoS attack where the auction cannot finish. 
+Setting too small of a tick spacing will make the auction extremely gas inefficient, and in specific cases, can result in a DoS attack where the auction cannot finish.
 
 ### Note on auction steps
+
 Steps in the auction create the supply issuance schedule. Generally each step should be monotonically increasing in the amount of tokens sold, and the last block of the auction MUST sell a significant amount of tokens.
 
 This is because the final clearing price of the auction is used to initialize a Uniswap v4 liquidity pool, and if only a small number of tokens are sold at the end, the final price will be easy to manipulate.
 
 See the [whitepaper](./docs/assets/whitepaper.pdf) for more details.
+
+> > > > > > > main
 
 ## License
 

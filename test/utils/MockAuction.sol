@@ -24,8 +24,8 @@ contract MockContinuousClearingAuction is ContinuousClearingAuction {
     }
 
     /// @notice Wrapper around internal function for testing
-    function iterateOverTicksAndFindClearingPrice(Checkpoint memory checkpoint) external returns (uint256) {
-        return _iterateOverTicksAndFindClearingPrice(checkpoint);
+    function iterateOverTicksAndFindClearingPrice() external returns (uint256) {
+        return _iterateOverTicksAndFindClearingPrice(MAX_TICK_PTR);
     }
 
     /// @notice Wrapper around internal function for testing
@@ -50,7 +50,7 @@ contract MockContinuousClearingAuction is ContinuousClearingAuction {
         external
         returns (Bid memory, uint256)
     {
-        return _createBid(amount, owner, maxPrice, startCumulativeMps);
+        return _createBid(_getBlockNumberish(), amount, owner, maxPrice, startCumulativeMps);
     }
 
     function uncheckedInitializeTickIfNeeded(uint256 prevPrice, uint256 price) external {

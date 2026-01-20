@@ -1,5 +1,5 @@
 # ConstantsLib
-[Git Source](https://github.com/Uniswap/twap-auction/blob/000be74c9fb6e92005b3e6aff5f612cf221eaa8e/src/libraries/ConstantsLib.sol)
+[Git Source](https://github.com/Uniswap/twap-auction/blob/c9923b6612650531d4151de2f459778059410469/src/libraries/ConstantsLib.sol)
 
 **Title:**
 ConstantsLib

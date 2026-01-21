@@ -29,26 +29,25 @@ forge test
 
 CCA instances are deployed via the [ContinuousClearingAuctionFactory](./src/ContinuousClearingAuctionFactory.sol).
 
-Addresses are cannonical across select EVM chains.
+Addresses are cannonical across select EVM chains. If it is not already deployed, it can be deployed by anyone following the [Deployment Guide](./docs/DeploymentGuide.md).
 
 ### ContinuousClearingAuctionFactory
 
 | Network  | Address                                    | Commit Hash                              | Version          |
 | -------- | ------------------------------------------ | ---------------------------------------- | ---------------- |
-| v1.1.0   | 0xcca110c1136B93Eb113cceae3C25e52E180B32C9 |                                          |                  |
+| v1.1.0   | 0xcca1101C61cF5cb44C968947985300DF945C3565 | 95d7da7a2d25cf60f14eaccd6ab5fb24d393a452 | v1.1.0           |
 | v1.0.0\* | 0x0000ccaDF55C911a2FbC0BB9d2942Aa77c6FAa1D | 154fd189022858707837112943c09346869c964f | v1.0.0-candidate |
 
-> \*v1.0.0-candidate is the initial version of CCA and is NOT recommended for production use. For more details, see the [Changelog](./docs/CHANGELOG.md).
+> \*v1.0.0-candidate is the initial version of CCA and is NOT recommended for production use. For more details, see the [Changelog](./CHANGELOG.md).
 
 ## Audits
 
-| Version | Date       | Report                                                              |
-| ------- | ---------- | ------------------------------------------------------------------- |
-| v1.0.0  | 11/11/2025 | [Spearbit](./docs/audits/Spearbit_Nov_11_2025.pdf)                  |
-| v1.0.0  | 10/21/2025 | [OpenZeppelin](./docs/audits/OpenZeppelin_v1.0.0.pdf)               |
-| v1.0.0  | 10/19/2025 | [Spearbit](./docs/audits/Spearbit_v1.0.0.pdf)                       |
-| v1.0.0  | 10/19/2025 | [ABDK Consulting](./docs/audits/ABDK_Uniswap_TWAPAuction_v_1_0.pdf) |
-| v1.0.0  | 08/25/2025 | [OpenZeppelin](./docs/audits/OpenZeppelin_v0.pdf)                   |
+The code has been audited by Spearbit, OpenZeppelin, and ABDK Consulting. The most recent audits for v1.1.0 are linked below. For a full list of audits, see [Audits](./docs/audits/README.md).
+
+| Version | Date       | Report |
+| ------- | ---------- | ------ |
+| v1.1.0  | 01/20/2026 |        |
+| v1.1.0  | 01/20/2026 |        |
 
 ### Bug bounty
 
@@ -65,7 +64,7 @@ The [whitepaper](./docs/assets/whitepaper.pdf) for the Continuous Clearing Aucti
 ## Docs
 
 - [Technical documentation](./docs/TechnicalDocumentation.md)
-- [Changelog](./docs/CHANGELOG.md)
+- [Changelog](./CHANGELOG.md)
 - [Deployment guide](./docs/DeploymentGuide.md)
 
 ## Repository Structure

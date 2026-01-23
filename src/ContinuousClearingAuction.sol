@@ -159,18 +159,18 @@ contract ContinuousClearingAuction is
     }
 
     /// @inheritdoc IContinuousClearingAuction
-    function supportsInterface(bytes4 interfaceId) external view returns (bool) {
+    function supportsInterface(bytes4 interfaceId) external pure returns (bool) {
         return interfaceId == ILBP_INITIALIZER_INTERFACE_ID || interfaceId == IERC165.supportsInterface.selector;
-    }
-
-    /// @inheritdoc IContinuousClearingAuction
-    function isGraduated() external view returns (bool) {
-        return _isGraduated();
     }
 
     /// @inheritdoc IContinuousClearingAuction
     function clearingPrice() external view returns (uint256) {
         return $clearingPrice;
+    }
+
+    /// @inheritdoc IContinuousClearingAuction
+    function isGraduated() external view returns (bool) {
+        return _isGraduated();
     }
 
     /// @notice Whether the auction has graduated as of the given checkpoint

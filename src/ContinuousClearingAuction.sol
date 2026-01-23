@@ -751,7 +751,8 @@ contract ContinuousClearingAuction is
         if (sweepUnsoldTokensBlock != 0) revert CannotSweepTokens();
         uint256 unsoldTokens;
         if (_isGraduated()) {
-            unsoldTokens = TOTAL_SUPPLY_Q96.scaleUpToX7().sub($totalClearedQ96_X7).divUint256(FixedPoint96.Q96)
+            uint256 totalSupplyQ96 = uint256(TOTAL_SUPPLY) << FixedPoint96.RESOLUTION;
+            unsoldTokens = totalSupplyQ96.scaleUpToX7().saturatingSub($totalClearedQ96_X7).divUint256(FixedPoint96.Q96)
                 .scaleDownToUint256();
         } else {
             unsoldTokens = TOTAL_SUPPLY;

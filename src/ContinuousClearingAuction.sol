@@ -149,6 +149,8 @@ contract ContinuousClearingAuction is
     }
 
     /// @inheritdoc ILBPInitializer
+    /// @dev The calling contract must be aware that the values returned in this function for `currencyRaised` and `tokensSold`
+    ///      may not be reflective of the actual values if the auction did not graduate.
     function lbpInitializationParams() external view returns (LBPInitializationParams memory params) {
         // Require that the auction has been checkpointed at the end block before returning initialization params
         if ($lastCheckpointedBlock != END_BLOCK) revert AuctionIsNotFinalized();
@@ -417,8 +419,7 @@ contract ContinuousClearingAuction is
     }
 
     /// @notice Return the final checkpoint of the auction
-    /// @dev Only called when the auction is over. Changes the current state of the `step` to the final step in the auction
-    ///      any future calls to `step.mps` will return the mps of the last step in the auction
+    /// @dev Only called when the auction is over
     function _getFinalCheckpoint() internal returns (Checkpoint memory) {
         return _checkpointAtBlock(END_BLOCK);
     }
@@ -426,7 +427,7 @@ contract ContinuousClearingAuction is
     /// @notice Internal function for bid submission
     /// @dev Validates `maxPrice`, calls the validation hook (if set) and updates global state variables
     ///      For gas efficiency, `prevTickPrice` should be the price of the tick immediately before `maxPrice`.
-    /// @dev Does not check that the actual value `amount` was received by the contract
+    /// @dev Implementing functions must check that the actual value `amount` is received by the contract
     /// @return bidId The id of the created bid
     function _submitBid(
         uint256 _maxPrice,

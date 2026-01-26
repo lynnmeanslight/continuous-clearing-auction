@@ -32,7 +32,6 @@ contract BaseERC1155ValidationHookTest is Test {
     function test_supportsInterface() public view virtual {
         assertEq(hook.supportsInterface(type(IERC165).interfaceId), true);
         assertEq(hook.supportsInterface(type(IValidationHook).interfaceId), true);
-        assertEq(hook.supportsInterface(type(IValidationHookIntrospection).interfaceId), true);
         assertEq(hook.supportsInterface(type(IBaseERC1155ValidationHook).interfaceId), true);
     }
 

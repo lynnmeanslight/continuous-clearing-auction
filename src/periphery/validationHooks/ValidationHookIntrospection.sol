@@ -11,8 +11,6 @@ interface IValidationHookIntrospection is IValidationHook, IERC165 {}
 abstract contract ValidationHookIntrospection is IValidationHookIntrospection {
     /// @inheritdoc IERC165
     function supportsInterface(bytes4 _interfaceId) public view virtual returns (bool) {
-        return _interfaceId == type(IValidationHook).interfaceId
-            || _interfaceId == type(IValidationHookIntrospection).interfaceId
-            || _interfaceId == type(IERC165).interfaceId;
+        return _interfaceId == type(IValidationHook).interfaceId || _interfaceId == type(IERC165).interfaceId;
     }
 }

@@ -28,9 +28,9 @@ Fully backwards compatible with Liquidity Launcher v1.0.0 deployments. Contains 
 | -------- | ------------------------------------------ | ---------------------------------------- | ---------------- |
 | Mainnet | 0xCCccCcCAE7503Cac057829BF2811De42E16e0bD5 | 8508f332c3daf330b189290b335fd9da4e95f3f0 | v1.1.0 |
 | Unichain | 0xCCccCcCAE7503Cac057829BF2811De42E16e0bD5 | 8508f332c3daf330b189290b335fd9da4e95f3f0 | v1.1.0 |
-| Unichain Sepolia | 0xCCccCcCAE7503Cac057829BF2811De42E16e0bD5 |  | v1.1.0 |
 | Base | 0xCCccCcCAE7503Cac057829BF2811De42E16e0bD5 | 8508f332c3daf330b189290b335fd9da4e95f3f0 | v1.1.0 |
 | Sepolia | 0xCCccCcCAE7503Cac057829BF2811De42E16e0bD5 | 8508f332c3daf330b189290b335fd9da4e95f3f0 | v1.1.0 |
+| Unichain Sepolia | 0xCCccCcCAE7503Cac057829BF2811De42E16e0bD5 | 7f9af28e7354af587a3930af4e6b7acdb64e8739 | v1.1.0 |
 
 ## v1.0.0
 
